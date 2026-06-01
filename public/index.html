@@ -219,10 +219,18 @@
 
   <!-- SETTINGS TAB -->
   <div id="tab-settings" style="display:none">
+
     <div class="panel">
-      <div class="panel-title">Kur Çiftleri</div>
-      <div class="pair-list" id="pair-list"></div>
-      <button class="add-pair-btn" onclick="addPair()">+ Yeni Kur Çifti Ekle</button>
+      <div class="panel-title">Ana Para Birimi</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <select class="pair-select" id="base-currency-select" onchange="onBaseChange()" style="font-size:15px;padding:10px 14px">
+        </select>
+        <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">kaynak para birimi olarak seçildi</span>
+      </div>
+
+      <div class="panel-title">Hedef Para Birimleri</div>
+      <div id="target-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+      <button class="add-pair-btn" onclick="addTarget()">+ Hedef Para Birimi Ekle</button>
     </div>
 
     <div class="panel">
@@ -370,55 +378,102 @@ async function loadDashboard() {
 }
 
 // ── SETTINGS ──
+// Yeni yapı: { base: 'USD', targets: [ { code: 'TRY', margin: 2 }, { code: 'EUR', margin: 1 } ] }
+let baseCurrency = 'USD';
+let targets = [{ code: 'TRY', margin: 0 }];
+
 async function loadSettings() {
   try {
     const res = await fetch(`/api/settings?shop=${SHOP}`);
     const s = await res.json();
-    currencyPairs = s.currencies || [{ base: 'USD', target: 'TRY', margin: 0 }];
+
+    // Eski format (currencies array) → yeni formata çevir
+    if (s.currencies && s.currencies.length > 0) {
+      baseCurrency = s.currencies[0].base || 'USD';
+      targets = s.currencies.map(c => ({ code: c.target, margin: c.margin || 0 }));
+    }
+    if (s.baseCurrency) baseCurrency = s.baseCurrency;
+    if (s.targets) targets = s.targets;
+
     autoUpdateOn = s.autoUpdate !== false;
     document.getElementById('schedule-time').value = s.scheduleTime || '09:00';
     document.getElementById('auto-toggle').classList.toggle('on', autoUpdateOn);
-    renderPairs();
+
+    // currencyPairs uyumluluğu için
+    currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
+
+    renderBaseSelect();
+    renderTargets();
   } catch(e) {}
 }
 
-function renderPairs() {
-  const list = document.getElementById('pair-list');
+function renderBaseSelect() {
+  const sel = document.getElementById('base-currency-select');
+  if (!sel) return;
+  sel.innerHTML = CURRENCIES.map(c =>
+    `<option value="${c.code}" ${c.code === baseCurrency ? 'selected' : ''}>${c.flag} ${c.code} — ${c.name}</option>`
+  ).join('');
+}
+
+function onBaseChange() {
+  baseCurrency = document.getElementById('base-currency-select').value;
+  currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
+}
+
+function renderTargets() {
+  const list = document.getElementById('target-list');
+  if (!list) return;
   list.innerHTML = '';
-  currencyPairs.forEach((pair, i) => {
+
+  targets.forEach((target, i) => {
     const row = document.createElement('div');
     row.className = 'pair-row';
+    row.style.gridTemplateColumns = 'auto 1fr auto auto';
     row.innerHTML = `
-      <select class="pair-select" onchange="updatePair(${i},'base',this.value)">
-        ${CURRENCIES.map(c => `<option value="${c.code}" ${c.code===pair.base?'selected':''}>${c.flag} ${c.code}</option>`).join('')}
-      </select>
-      <div class="pair-arrow">→</div>
-      <select class="pair-select" onchange="updatePair(${i},'target',this.value)">
-        ${CURRENCIES.map(c => `<option value="${c.code}" ${c.code===pair.target?'selected':''}>${c.flag} ${c.code}</option>`).join('')}
+      <div style="font-size:13px;color:var(--text3);font-family:var(--mono);padding:0 4px">${baseCurrency} →</div>
+      <select class="pair-select" onchange="updateTarget(${i},'code',this.value)">
+        ${CURRENCIES.filter(c => c.code !== baseCurrency).map(c =>
+          `<option value="${c.code}" ${c.code === target.code ? 'selected' : ''}>${c.flag} ${c.code} — ${c.name}</option>`
+        ).join('')}
       </select>
       <div class="pair-margin">
-        <input type="number" value="${pair.margin||0}" min="0" max="50" step="0.1" placeholder="0" oninput="updatePair(${i},'margin',this.value)"/>
+        <input type="number" value="${target.margin || 0}" min="0" max="50" step="0.1" placeholder="0"
+          oninput="updateTarget(${i},'margin',this.value)"/>
         <span>% marj</span>
       </div>
-      ${currencyPairs.length > 1 ? `<button class="pair-remove" onclick="removePair(${i})">✕</button>` : '<div></div>'}
+      ${targets.length > 1
+        ? `<button class="pair-remove" onclick="removeTarget(${i})">✕</button>`
+        : '<div style="width:34px"></div>'}
     `;
     list.appendChild(row);
   });
 }
 
-function addPair() {
-  currencyPairs.push({ base: 'EUR', target: 'TRY', margin: 0 });
-  renderPairs();
+function addTarget() {
+  // Daha önce seçilmemiş bir para birimi öner
+  const usedCodes = targets.map(t => t.code);
+  const next = CURRENCIES.find(c => c.code !== baseCurrency && !usedCodes.includes(c.code));
+  targets.push({ code: next?.code || 'EUR', margin: 0 });
+  currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
+  renderTargets();
 }
 
-function removePair(i) {
-  currencyPairs.splice(i, 1);
-  renderPairs();
+function removeTarget(i) {
+  targets.splice(i, 1);
+  currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
+  renderTargets();
 }
 
-function updatePair(i, key, val) {
-  currencyPairs[i][key] = key === 'margin' ? parseFloat(val) || 0 : val;
+function updateTarget(i, key, val) {
+  targets[i][key] = key === 'margin' ? parseFloat(val) || 0 : val;
+  currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
 }
+
+// Eski fonksiyonlar — uyumluluk için
+function renderPairs() { renderTargets(); }
+function addPair() { addTarget(); }
+function removePair(i) { removeTarget(i); }
+function updatePair(i, key, val) { updateTarget(i, key === 'target' ? 'code' : key, val); }
 
 function toggleAuto() {
   autoUpdateOn = !autoUpdateOn;
@@ -434,12 +489,14 @@ async function saveSettings() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         shop: SHOP,
+        baseCurrency,
+        targets,
         currencies: currencyPairs,
         autoUpdate: autoUpdateOn,
         scheduleTime: document.getElementById('schedule-time').value,
       })
     });
-    addLog(`Ayarlar kaydedildi: ${currencyPairs.length} kur çifti`, 'ok');
+    addLog(`Ayarlar kaydedildi: ${baseCurrency} → ${targets.map(t=>t.code).join(', ')} (${targets.length} hedef)`, 'ok');
   } catch(e) { showToast('✗ Kaydetme hatası', 'error'); btn.textContent = '💾 Kaydet & Senkronize Et'; return; }
 
   btn.innerHTML = '<span class="btn-spinner"></span> Senkronize ediliyor...';

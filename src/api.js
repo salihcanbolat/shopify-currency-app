@@ -65,17 +65,27 @@ apiRouter.get("/settings", (req, res) => {
 
 // POST /api/settings
 apiRouter.post("/settings", async (req, res) => {
-  const { shop, currencies, autoUpdate, scheduleTime } = req.body;
+  const { shop, currencies, baseCurrency, targets, autoUpdate, scheduleTime } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
+  // Yeni format: baseCurrency + targets[] → currencies[] formatına çevir
+  let currencyList = currencies || [];
+  if (baseCurrency && targets && targets.length > 0) {
+    currencyList = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin || 0 }));
+  }
+
   const rates = {};
-  for (const c of (currencies || [])) {
-    const rate = await getExchangeRate(c.base, c.target);
-    rates[`${c.base}_${c.target}`] = rate;
+  for (const c of currencyList) {
+    try {
+      const rate = await getExchangeRate(c.base, c.target);
+      rates[`${c.base}_${c.target}`] = rate;
+    } catch(e) { console.error(`Rate fetch error ${c.base}→${c.target}:`, e.message); }
   }
 
   const settings = {
-    currencies: currencies || [{ base: "USD", target: "TRY", margin: 0 }],
+    currencies: currencyList,
+    baseCurrency: baseCurrency || currencyList[0]?.base || "USD",
+    targets: targets || currencyList.map(c => ({ code: c.target, margin: c.margin || 0 })),
     autoUpdate: !!autoUpdate,
     scheduleTime: scheduleTime || "09:00",
     lastUpdated: new Date().toISOString(),
