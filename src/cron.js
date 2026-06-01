@@ -1,51 +1,56 @@
 import cron from "node-cron";
+import fs from "fs";
 import { getExchangeRate } from "./rateService.js";
 import { updateAllProductPrices } from "./priceUpdater.js";
 
+function loadTokens() {
+  try { return JSON.parse(fs.readFileSync("tokens.json", "utf8")); } catch { return {}; }
+}
+
+function loadSettings() {
+  try { return JSON.parse(fs.readFileSync("settings.json", "utf8")); } catch { return {}; }
+}
+
 export function scheduleCronJob() {
-  // Run every hour at :00
-  cron.schedule("0 * * * *", async () => {
-    console.log("⏰ Cron: Running scheduled currency sync...");
+  // Her dakika kontrol et — ayarlanan saatte çalıştır
+  cron.schedule("* * * * *", async () => {
+    const allSettings = loadSettings();
+    const tokens = loadTokens();
 
-    const shops = Object.keys(global.shopSettings || {});
+    for (const [shop, settings] of Object.entries(allSettings)) {
+      if (!settings.autoUpdate) continue;
 
-    for (const shop of shops) {
-      const settings = global.shopSettings[shop];
-      const token = global.shopTokens?.[shop];
+      const token = tokens[shop];
+      if (!token) continue;
 
-      if (!settings?.autoUpdate || !token) continue;
+      // Zamanlama kontrolü
+      const now = new Date();
+      const [schedHour, schedMin] = (settings.scheduleTime || "09:00").split(":").map(Number);
+      if (now.getHours() !== schedHour || now.getMinutes() !== schedMin) continue;
 
-      try {
-        const rate = await getExchangeRate(
-          settings.baseCurrency,
-          settings.targetCurrency
-        );
+      console.log(`⏰ Zamanlanmış güncelleme: ${shop} (${settings.scheduleTime})`);
 
-        // Only update if rate changed more than 0.5%
-        const prevRate = settings.lastRate || 0;
-        const changePct = Math.abs((rate - prevRate) / prevRate) * 100;
-
-        if (prevRate > 0 && changePct < 0.5) {
-          console.log(
-            `⏩ ${shop}: Rate change ${changePct.toFixed(2)}% < 0.5%, skipping.`
-          );
-          continue;
+      for (const currencyPair of (settings.currencies || [])) {
+        try {
+          const rate = await getExchangeRate(currencyPair.base, currencyPair.target);
+          const effectiveRate = rate * (1 + (currencyPair.margin || 0) / 100);
+          const result = await updateAllProductPrices(shop, token, effectiveRate);
+          console.log(`✅ ${shop}: ${result.updatedCount} ürün güncellendi (${currencyPair.base}→${currencyPair.target})`);
+        } catch (err) {
+          console.error(`❌ ${shop} güncelleme hatası:`, err.message);
         }
-
-        const effectiveRate = rate * (1 + settings.margin / 100);
-        const result = await updateAllProductPrices(shop, token, effectiveRate);
-
-        global.shopSettings[shop].lastRate = rate;
-        global.shopSettings[shop].lastUpdated = new Date().toISOString();
-
-        console.log(
-          `✅ ${shop}: Synced ${result.updatedCount} variants at rate ${effectiveRate.toFixed(4)}`
-        );
-      } catch (err) {
-        console.error(`❌ Cron error for ${shop}:`, err.message);
       }
+
+      // Son güncelleme zamanını kaydet
+      try {
+        const all = loadSettings();
+        if (all[shop]) {
+          all[shop].lastUpdated = new Date().toISOString();
+          fs.writeFileSync("settings.json", JSON.stringify(all, null, 2));
+        }
+      } catch {}
     }
   });
 
-  console.log("⏰ Cron job scheduled: hourly rate sync active");
+  console.log("⏰ Cron job başlatıldı: dakikalık zamanlama kontrolü aktif");
 }
