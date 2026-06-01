@@ -1,0 +1,33 @@
+# Shopify App Configuration
+# Bu dosyayı Shopify CLI ile kullanın: shopify app dev
+
+name = "KurSync - Currency Converter"
+client_id = "{{ SHOPIFY_API_KEY }}"  # .env'den alınır
+application_url = "{{ HOST }}"
+
+[access_scopes]
+scopes = "write_products,read_products"
+
+[auth]
+redirect_urls = [
+  "{{ HOST }}/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-01"
+
+# GDPR Webhooks — App Store için zorunlu
+[[webhooks.subscriptions]]
+topics = ["customers/redact"]
+uri = "/webhooks/customers-redact"
+
+[[webhooks.subscriptions]]
+topics = ["shop/redact"]
+uri = "/webhooks/shop-redact"
+
+[[webhooks.subscriptions]]
+topics = ["customers/data_request"]
+uri = "/webhooks/customers-data-request"
+
+[pos]
+embedded = false
