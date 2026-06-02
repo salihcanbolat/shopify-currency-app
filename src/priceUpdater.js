@@ -1,14 +1,14 @@
 const DELAY_MS = 300;
 
-export async function updateAllProductPrices(shop, accessToken, effectiveRate) {
-  return await updateProducts(shop, accessToken, effectiveRate, null);
+export async function updateAllProductPrices(shop, accessToken, effectiveRate, limit = Infinity) {
+  return await updateProducts(shop, accessToken, effectiveRate, null, limit);
 }
 
-export async function updateCollectionPrices(shop, accessToken, effectiveRate, collectionId) {
-  return await updateProducts(shop, accessToken, effectiveRate, collectionId);
+export async function updateCollectionPrices(shop, accessToken, effectiveRate, collectionId, limit = Infinity) {
+  return await updateProducts(shop, accessToken, effectiveRate, collectionId, limit);
 }
 
-async function updateProducts(shop, accessToken, effectiveRate, collectionId) {
+async function updateProducts(shop, accessToken, effectiveRate, collectionId, limit = Infinity) {
   let allProducts = [];
   let pageInfo = null;
   let hasNextPage = true;
@@ -44,7 +44,13 @@ async function updateProducts(shop, accessToken, effectiveRate, collectionId) {
   let totalUpdated = 0;
   const variants = allProducts.flatMap(p => p.variants);
 
-  for (const variant of variants) {
+  // Free plan limiti uygula
+  const limitedVariants = isFinite(limit) ? variants.slice(0, limit) : variants;
+  if (isFinite(limit) && variants.length > limit) {
+    console.log(`⚠️ Free plan limiti: ${variants.length} varyant var, ${limit} tanesi güncellenecek`);
+  }
+
+  for (const variant of limitedVariants) {
     try {
       const usdPrice = variant.compare_at_price
         ? parseFloat(variant.compare_at_price)

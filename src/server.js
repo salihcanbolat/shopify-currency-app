@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { shopifyAuth, loadTokens } from "./auth.js";
 import { apiRouter } from "./api.js";
 import { gdprRouter } from "./gdpr.js";
+import { billingRouter } from "./billingRoutes.js";
 import { scheduleCronJob } from "./cron.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,9 @@ app.use("/api", apiRouter);
 
 // GDPR webhooks (Shopify App Store zorunlu)
 app.use("/webhooks", gdprRouter);
+
+// Billing routes
+app.use("/billing", billingRouter);
 
 // Embedded app entry
 app.get("/", (req, res) => {

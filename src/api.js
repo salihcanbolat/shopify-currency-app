@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import { getExchangeRate } from "./rateService.js";
 import { updateAllProductPrices, updateCollectionPrices } from "./priceUpdater.js";
+import { isPremium, getProductLimit, getSubscription } from "./billing.js";
 
 export const apiRouter = express.Router();
 
@@ -256,15 +257,17 @@ apiRouter.post("/sync", async (req, res) => {
 
   try {
     let totalUpdated = 0;
+    const productLimit = getProductLimit(shop);
+    const premium = isPremium(shop);
 
     for (const currencyPair of (settings.currencies || [])) {
       const rate = await getExchangeRate(currencyPair.base, currencyPair.target);
       const effectiveRate = rate * (1 + (currencyPair.margin || 0) / 100);
-      console.log(`Sync: ${currencyPair.base}→${currencyPair.target}, kur: ${effectiveRate}, koleksiyon: ${collection_id || "all"}`);
+      console.log(`Sync: ${currencyPair.base}→${currencyPair.target}, kur: ${effectiveRate}, limit: ${productLimit}, koleksiyon: ${collection_id || "all"}`);
 
       const result = collection_id && collection_id !== "all"
-        ? await updateCollectionPrices(shop, token, effectiveRate, collection_id)
-        : await updateAllProductPrices(shop, token, effectiveRate);
+        ? await updateCollectionPrices(shop, token, effectiveRate, collection_id, productLimit)
+        : await updateAllProductPrices(shop, token, effectiveRate, productLimit);
 
       totalUpdated += result.updatedCount;
     }
@@ -304,12 +307,16 @@ apiRouter.get("/dashboard", async (req, res) => {
       rates.push({ base: c.base, target: c.target, rate, effectiveRate, margin: c.margin || 0 });
     }
 
+    const sub = getSubscription(shop);
     res.json({
       productCount: countData.count || 0,
       lastUpdated: settings.lastUpdated || null,
       rates,
       autoUpdate: settings.autoUpdate || false,
       scheduleTime: settings.scheduleTime || "09:00",
+      plan: sub.plan || "free",
+      isPremium: isPremium(shop),
+      productLimit: getProductLimit(shop),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
