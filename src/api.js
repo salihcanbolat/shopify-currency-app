@@ -8,10 +8,22 @@ export const apiRouter = express.Router();
 global.shopSettings = global.shopSettings || {};
 
 function loadTokens() {
-  try { return JSON.parse(fs.readFileSync("tokens.json", "utf8")); } catch { return {}; }
+  let tokens = {};
+  try { Object.assign(tokens, JSON.parse(fs.readFileSync("tokens.json", "utf8"))); } catch {}
+  for (const [key, val] of Object.entries(process.env)) {
+    if (key.startsWith("SHOP_TOKEN_") && val) {
+      const shop = key.replace("SHOP_TOKEN_", "")
+        .replace(/_myshopify_com$/, ".myshopify.com")
+        .replace(/_/g, "-");
+      tokens[shop] = val;
+    }
+  }
+  return tokens;
 }
 
-function getToken(shop) { return loadTokens()[shop]; }
+function getToken(shop) {
+  return global.shopTokens?.[shop] || loadTokens()[shop];
+}
 
 function saveSettings(shop, settings) {
   global.shopSettings[shop] = settings;

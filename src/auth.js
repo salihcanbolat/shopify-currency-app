@@ -10,27 +10,46 @@ const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
 const HOST = process.env.HOST || "https://your-app.ngrok.io";
 const TOKENS_FILE = "tokens.json";
 
+function shopToEnvKey(shop) {
+  return "SHOP_TOKEN_" + shop.replace(/[^a-zA-Z0-9]/g, "_");
+}
+
 function saveToken(shop, token) {
+  // Dosyaya kaydet
   let tokens = {};
-  try {
-    tokens = JSON.parse(fs.readFileSync(TOKENS_FILE, "utf8"));
-  } catch {}
+  try { tokens = JSON.parse(fs.readFileSync(TOKENS_FILE, "utf8")); } catch {}
   tokens[shop] = token;
-  fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+  try { fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2)); } catch {}
   global.shopTokens = tokens;
   console.log(`✅ Token kaydedildi: ${shop}`);
 }
 
 export function loadTokens() {
+  let tokens = {};
+
+  // 1. Dosyadan oku
   try {
-    const tokens = JSON.parse(fs.readFileSync(TOKENS_FILE, "utf8"));
-    global.shopTokens = tokens;
-    console.log(`📦 Tokenlar yüklendi: ${Object.keys(tokens).join(", ")}`);
-    return tokens;
-  } catch {
-    global.shopTokens = {};
-    return {};
+    const fromFile = JSON.parse(fs.readFileSync(TOKENS_FILE, "utf8"));
+    Object.assign(tokens, fromFile);
+  } catch {}
+
+  // 2. Environment variables'dan oku (Railway deploy sonrası)
+  for (const [key, val] of Object.entries(process.env)) {
+    if (key.startsWith("SHOP_TOKEN_") && val) {
+      // SHOP_TOKEN_karinca_digital_myshopify_com → karinca-digital.myshopify.com
+      const shop = key.replace("SHOP_TOKEN_", "")
+        .replace(/_myshopify_com$/, ".myshopify.com")
+        .replace(/_/g, "-");
+      tokens[shop] = val;
+      console.log(`📦 Env token yüklendi: ${shop}`);
+    }
   }
+
+  global.shopTokens = tokens;
+  if (Object.keys(tokens).length > 0) {
+    console.log(`📦 Tokenlar: ${Object.keys(tokens).join(", ")}`);
+  }
+  return tokens;
 }
 
 // Step 1: Redirect to Shopify OAuth
