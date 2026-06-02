@@ -1,15 +1,14 @@
-import dotenv from 'dotenv';
-dotenv.config();
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { shopifyAuth, loadTokens } from "./auth.js";
 import { apiRouter } from "./api.js";
+import { gdprRouter } from "./gdpr.js";
 import { scheduleCronJob } from "./cron.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,6 +22,9 @@ app.use("/auth", shopifyAuth);
 
 // API routes
 app.use("/api", apiRouter);
+
+// GDPR webhooks (Shopify App Store zorunlu)
+app.use("/webhooks", gdprRouter);
 
 // Embedded app entry
 app.get("/", (req, res) => {
