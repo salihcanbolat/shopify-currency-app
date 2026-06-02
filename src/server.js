@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -6,36 +9,31 @@ import { apiRouter } from "./api.js";
 import { gdprRouter } from "./gdpr.js";
 import { billingRouter } from "./billingRoutes.js";
 import { scheduleCronJob } from "./cron.js";
+import { initDb, loadAllSettings } from "./db.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Tokenları dosyadan yükle (uygulama başlarken)
-loadTokens();
+// DB başlat ve verileri yükle
+await initDb();
+await loadTokens();
+await loadAllSettings();
 
-// Shopify OAuth routes
+// Routes
 app.use("/auth", shopifyAuth);
-
-// API routes
 app.use("/api", apiRouter);
-
-// GDPR webhooks (Shopify App Store zorunlu)
 app.use("/webhooks", gdprRouter);
-
-// Billing routes
 app.use("/billing", billingRouter);
 
-// Embedded app entry
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// Start cron job
 scheduleCronJob();
 
 app.listen(PORT, () => {

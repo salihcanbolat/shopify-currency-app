@@ -1,5 +1,3 @@
-import fs from "fs";
-
 const HOST = process.env.HOST || "https://shopify-currency-app-production.up.railway.app";
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 
@@ -18,36 +16,13 @@ export const PLANS = {
   },
 };
 
-function loadSubscriptions() {
-  try { return JSON.parse(fs.readFileSync("subscriptions.json", "utf8")); } catch { return {}; }
-}
-
-function saveSubscription(shop, data) {
-  const subs = loadSubscriptions();
-  subs[shop] = data;
-  fs.writeFileSync("subscriptions.json", JSON.stringify(subs, null, 2));
-  if (!global.shopSubscriptions) global.shopSubscriptions = {};
-  global.shopSubscriptions[shop] = data;
-}
-
-export function getSubscription(shop) {
-  if (global.shopSubscriptions?.[shop]) return global.shopSubscriptions[shop];
-  const subs = loadSubscriptions();
-  return subs[shop] || { plan: "free", status: "active" };
-}
-
 export function isPremium(shop) {
-  const sub = getSubscription(shop);
-  return sub.plan === "premium" && sub.status === "active";
+  const sub = global.shopSubscriptions?.[shop];
+  return sub?.plan === "premium" && sub?.status === "active";
 }
 
 export function getProductLimit(shop) {
   return isPremium(shop) ? Infinity : PLANS.free.productLimit;
-}
-
-export function loadAllSubscriptions() {
-  global.shopSubscriptions = loadSubscriptions();
-  console.log(`💳 Abonelikler yüklendi: ${Object.keys(global.shopSubscriptions).length} mağaza`);
 }
 
 // Shopify'da ücretli abonelik oluştur
@@ -134,15 +109,19 @@ export async function checkSubscription(shop, token) {
   const subs = data.data?.currentAppInstallation?.activeSubscriptions || [];
 
   if (subs.length > 0 && subs[0].status === "ACTIVE") {
-    saveSubscription(shop, {
+    const subData = {
       plan: "premium",
       status: "active",
       subscriptionId: subs[0].id,
       currentPeriodEnd: subs[0].currentPeriodEnd,
-    });
-    return { plan: "premium", status: "active" };
+    };
+    if (!global.shopSubscriptions) global.shopSubscriptions = {};
+    global.shopSubscriptions[shop] = subData;
+    return subData;
   }
 
-  saveSubscription(shop, { plan: "free", status: "active" });
-  return { plan: "free", status: "active" };
+  const freeData = { plan: "free", status: "active" };
+  if (!global.shopSubscriptions) global.shopSubscriptions = {};
+  global.shopSubscriptions[shop] = freeData;
+  return freeData;
 }

@@ -1,49 +1,16 @@
 import express from "express";
-import fs from "fs";
 import { getExchangeRate } from "./rateService.js";
 import { updateAllProductPrices, updateCollectionPrices } from "./priceUpdater.js";
-import { isPremium, getProductLimit, getSubscription } from "./billing.js";
+import { isPremium, getProductLimit } from "./billing.js";
+import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription } from "./db.js";
 
 export const apiRouter = express.Router();
 
 global.shopSettings = global.shopSettings || {};
 
-function loadTokens() {
-  let tokens = {};
-  try { Object.assign(tokens, JSON.parse(fs.readFileSync("tokens.json", "utf8"))); } catch {}
-  for (const [key, val] of Object.entries(process.env)) {
-    if (key.startsWith("SHOP_TOKEN_") && val) {
-      const shop = key.replace("SHOP_TOKEN_", "")
-        .replace(/_myshopify_com$/, ".myshopify.com")
-        .replace(/_/g, "-");
-      tokens[shop] = val;
-    }
-  }
-  return tokens;
-}
+// Token functions moved to db.js
 
-function getToken(shop) {
-  return global.shopTokens?.[shop] || loadTokens()[shop];
-}
-
-function saveSettings(shop, settings) {
-  global.shopSettings[shop] = settings;
-  try {
-    const all = JSON.parse(fs.readFileSync("settings.json", "utf8") || "{}");
-    all[shop] = settings;
-    fs.writeFileSync("settings.json", JSON.stringify(all, null, 2));
-  } catch {
-    fs.writeFileSync("settings.json", JSON.stringify({ [shop]: settings }, null, 2));
-  }
-}
-
-function loadAllSettings() {
-  try {
-    const all = JSON.parse(fs.readFileSync("settings.json", "utf8"));
-    Object.assign(global.shopSettings, all);
-  } catch {}
-}
-loadAllSettings();
+// Settings functions moved to db.js
 
 // GET /api/currencies
 apiRouter.get("/currencies", (req, res) => {
@@ -67,7 +34,7 @@ apiRouter.get("/currencies", (req, res) => {
 apiRouter.get("/settings", (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
-  const settings = global.shopSettings[shop] || {
+  const settings = await getSettings(shop) || {
     currencies: [{ base: "USD", target: "TRY", margin: 0 }],
     autoUpdate: true,
     scheduleTime: "09:00",
@@ -105,7 +72,7 @@ apiRouter.post("/settings", async (req, res) => {
     rates,
   };
 
-  saveSettings(shop, settings);
+  await dbSaveSettings(shop, settings);
   res.json({ success: true, rates });
 });
 
@@ -125,7 +92,7 @@ apiRouter.get("/rate", async (req, res) => {
 apiRouter.get("/collections", async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
@@ -155,7 +122,7 @@ apiRouter.get("/collections", async (req, res) => {
 apiRouter.get("/products", async (req, res) => {
   const { shop, collection_id } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
@@ -215,7 +182,7 @@ apiRouter.post("/product/update", async (req, res) => {
   const { shop, variantId, usdPrice, baseCurrency, targetCurrency, margin } = req.body;
   if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = global.shopSettings[shop];
@@ -249,10 +216,10 @@ apiRouter.post("/sync", async (req, res) => {
   const { shop, collection_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
-  const settings = global.shopSettings[shop];
+  const settings = await getSettings(shop);
   if (!settings) return res.status(400).json({ error: "No settings configured" });
 
   try {
@@ -273,7 +240,7 @@ apiRouter.post("/sync", async (req, res) => {
     }
 
     settings.lastUpdated = new Date().toISOString();
-    saveSettings(shop, settings);
+    await dbSaveSettings(shop, settings);
 
     res.json({ success: true, updatedCount: totalUpdated });
   } catch (err) {
@@ -287,7 +254,7 @@ apiRouter.get("/dashboard", async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = global.shopSettings[shop] || {};

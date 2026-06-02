@@ -1,27 +1,15 @@
 import express from "express";
-import { createSubscription, checkSubscription, getSubscription, isPremium, PLANS, loadAllSubscriptions } from "./billing.js";
-import fs from "fs";
+import { createSubscription, checkSubscription, isPremium, PLANS } from "./billing.js";
+import { getToken, saveSubscription, getSubscription } from "./db.js";
 
 export const billingRouter = express.Router();
-
-function getToken(shop) {
-  let tokens = {};
-  try { Object.assign(tokens, JSON.parse(fs.readFileSync("tokens.json", "utf8"))); } catch {}
-  for (const [key, val] of Object.entries(process.env)) {
-    if (key.startsWith("SHOP_TOKEN_") && val) {
-      const s = key.replace("SHOP_TOKEN_", "").replace(/_myshopify_com$/, ".myshopify.com").replace(/_/g, "-");
-      tokens[s] = val;
-    }
-  }
-  return tokens[shop] || global.shopTokens?.[shop];
-}
 
 // GET /billing/status?shop=xxx — plan durumu
 billingRouter.get("/status", async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
@@ -43,7 +31,7 @@ billingRouter.post("/subscribe", async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
@@ -59,7 +47,7 @@ billingRouter.get("/confirm", async (req, res) => {
   const { shop, charge_id } = req.query;
   if (!shop) return res.redirect("/");
 
-  const token = getToken(shop);
+  const token = await getToken(shop);
   if (token) {
     try {
       await checkSubscription(shop, token);
@@ -89,5 +77,3 @@ billingRouter.post("/cancel", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
-loadAllSubscriptions();
