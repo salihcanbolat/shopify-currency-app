@@ -5,9 +5,13 @@ let pool = null;
 
 export function getDb() {
   if (!pool) {
+    const dbUrl = process.env.DATABASE_URL;
+    // Railway internal (.railway.internal) SSL gerektirmez
+    // Railway public (.rlwy.net) SSL gerektirir
+    const needsSsl = dbUrl && !dbUrl.includes(".railway.internal");
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes("railway") ? { rejectUnauthorized: false } : false,
+      connectionString: dbUrl,
+      ssl: needsSsl ? { rejectUnauthorized: false } : false,
     });
   }
   return pool;
