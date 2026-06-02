@@ -13,7 +13,7 @@ global.shopSettings = global.shopSettings || {};
 // Settings functions moved to db.js
 
 // GET /api/currencies
-apiRouter.get("/currencies", (req, res) => {
+apiRouter.get("/currencies", async (req, res) => {
   res.json([
     { code: "USD", name: "ABD Doları", symbol: "$", flag: "🇺🇸" },
     { code: "EUR", name: "Euro", symbol: "€", flag: "🇪🇺" },
@@ -31,7 +31,7 @@ apiRouter.get("/currencies", (req, res) => {
 });
 
 // GET /api/settings
-apiRouter.get("/settings", (req, res) => {
+apiRouter.get("/settings", async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const settings = await getSettings(shop) || {
