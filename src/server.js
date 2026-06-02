@@ -19,11 +19,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 
-// DB başlat ve verileri yükle
-await initDb();
-await loadTokens();
-await loadAllSettings();
-
 // Routes
 app.use("/auth", shopifyAuth);
 app.use("/api", apiRouter);
@@ -34,8 +29,22 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-scheduleCronJob();
+// DB başlat ve uygulamayı başlat
+async function startServer() {
+  try {
+    await initDb();
+    await loadTokens();
+    await loadAllSettings();
+    console.log("✅ Veritabanı bağlantısı kuruldu");
+  } catch(e) {
+    console.error("⚠️ DB bağlantısı kurulamadı, dosya tabanlı çalışılıyor:", e.message);
+  }
 
-app.listen(PORT, () => {
-  console.log(`✅ Currency App running on http://localhost:${PORT}`);
-});
+  scheduleCronJob();
+
+  app.listen(PORT, () => {
+    console.log(`✅ Currency App running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
