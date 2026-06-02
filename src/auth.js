@@ -111,7 +111,7 @@ shopifyAuth.get("/callback", async (req, res) => {
 
     saveToken(shop, access_token);
 
-    res.redirect(`https://${shop}/admin/apps/${SHOPIFY_API_KEY}`);
+    res.redirect(`https://admin.shopify.com/store/${shop.replace('.myshopify.com', '')}/apps/${SHOPIFY_API_KEY}`);
   } catch (err) {
     console.error("OAuth error:", err);
     res.status(500).send("Authentication failed: " + err.message);
