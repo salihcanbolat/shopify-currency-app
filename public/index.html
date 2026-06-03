@@ -175,9 +175,9 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</div>
-    <div class="tab" onclick="switchTab('settings',this)">⚙️ Kurlar</div>
-    <div class="tab" onclick="switchTab('products',this)">📦 Ürünler</div>
+    <div class="tab active" data-tab="dashboard">📊 Dashboard</div>
+    <div class="tab" data-tab="settings">⚙️ Kurlar</div>
+    <div class="tab" data-tab="products">📦 Ürünler</div>
   </div>
 
   <!-- DASHBOARD TAB -->
@@ -344,11 +344,12 @@ async function init() {
   } catch(e) {
     addLog('Bağlantı hatası: ' + e.message, 'err');
   }
+  setupTabs();
 }
 
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
   ['dashboard','settings','products'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
@@ -356,6 +357,14 @@ function switchTab(tab, el) {
     loadCollections();
     loadProducts();
   }
+}
+
+function setupTabs() {
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+    tab.addEventListener('click', function() {
+      switchTab(this.dataset.tab, this);
+    });
+  });
 }
 
 // ── DASHBOARD ──
