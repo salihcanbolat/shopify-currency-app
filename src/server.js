@@ -8,6 +8,7 @@ import { shopifyAuth, loadTokens } from "./auth.js";
 import { apiRouter } from "./api.js";
 import { gdprRouter } from "./gdpr.js";
 import { billingRouter } from "./billingRoutes.js";
+import { productWebhookRouter } from "./productWebhooks.js";
 import { scheduleCronJob } from "./cron.js";
 import { initDb, loadAllSettings } from "./db.js";
 
@@ -24,6 +25,7 @@ app.use("/auth", shopifyAuth);
 app.use("/api", apiRouter);
 app.use("/webhooks", gdprRouter);
 app.use("/billing", billingRouter);
+app.use("/webhooks", productWebhookRouter);
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));

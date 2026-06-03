@@ -58,6 +58,24 @@ shopifyAuth.get("/callback", async (req, res) => {
     // Token'ı DB'ye kaydet
     await saveToken(shop, access_token);
 
+    // products/create webhook'unu otomatik kaydet
+    try {
+      await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": access_token },
+        body: JSON.stringify({
+          webhook: {
+            topic: "products/create",
+            address: `${HOST}/webhooks/products/create`,
+            format: "json",
+          },
+        }),
+      });
+      console.log(`\u2705 products/create webhook kaydedildi: ${shop}`);
+    } catch(e) {
+      console.error("Webhook kayit hatasi:", e.message);
+    }
+
     const storeName = shop.replace(".myshopify.com", "");
     res.redirect(`https://admin.shopify.com/store/${storeName}/apps/${SHOPIFY_API_KEY}`);
   } catch(err) {

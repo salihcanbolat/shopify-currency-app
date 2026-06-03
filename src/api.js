@@ -47,7 +47,8 @@ apiRouter.get("/settings", async (req, res) => {
 // POST /api/settings
 apiRouter.post("/settings", async (req, res) => {
   const { shop, currencies, baseCurrency, targets, autoUpdate,
-          scheduleTime, scheduleTimes, rounding, minPrice, rateThreshold } = req.body;
+          scheduleTime, scheduleTimes, rounding, minPrice, rateThreshold,
+          autoPriceNewProducts } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   let currencyList = currencies || [];
@@ -77,6 +78,7 @@ apiRouter.post("/settings", async (req, res) => {
     rounding: rounding || "none",
     minPrice: parseFloat(minPrice) || 0,
     rateThreshold: parseFloat(rateThreshold) || 0,
+    autoPriceNewProducts: !!autoPriceNewProducts,
     lastUpdated: existing.lastUpdated || null,
     rates,
   };
@@ -346,6 +348,72 @@ apiRouter.post("/rollback", async (req, res) => {
 
     const result = await rollbackPrices(shop, token, rows);
     res.json({ success: true, restored: result.restored });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/analytics - analitik veriler
+apiRouter.get("/analytics", async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+
+  try {
+    const { getActivityLog, getPriceHistory } = await import("./db.js");
+    const activity = await getActivityLog(shop, 30);
+    const history = await getPriceHistory(shop, 500);
+
+    // Günlük güncelleme sayısı (son 7 gün)
+    const dailyUpdates = {};
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dailyUpdates[key] = 0;
+    }
+    activity.forEach(a => {
+      const key = new Date(a.created_at).toISOString().slice(0, 10);
+      if (key in dailyUpdates) dailyUpdates[key] += a.product_count || 0;
+    });
+
+    // Kur trendi (history'den unique tarih+rate)
+    const rateTrend = [];
+    const seenDates = new Set();
+    history.forEach(h => {
+      const key = new Date(h.created_at).toISOString().slice(0, 13); // saatlik
+      if (!seenDates.has(key) && h.rate) {
+        seenDates.add(key);
+        rateTrend.push({
+          time: new Date(h.created_at).toISOString(),
+          rate: parseFloat(h.rate),
+        });
+      }
+    });
+    rateTrend.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    // En çok güncellenen ürünler
+    const productCounts = {};
+    history.forEach(h => {
+      if (h.product_title) {
+        productCounts[h.product_title] = (productCounts[h.product_title] || 0) + 1;
+      }
+    });
+    const topProducts = Object.entries(productCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([title, count]) => ({ title, count }));
+
+    // Toplam istatistik
+    const totalUpdates = activity.reduce((sum, a) => sum + (a.product_count || 0), 0);
+
+    res.json({
+      dailyUpdates: Object.entries(dailyUpdates).map(([date, count]) => ({ date, count })),
+      rateTrend: rateTrend.slice(-20),
+      topProducts,
+      totalUpdates,
+      totalSyncs: activity.length,
+    });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }

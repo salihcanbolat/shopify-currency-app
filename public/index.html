@@ -179,6 +179,7 @@
     <div class="tab" data-tab="settings">⚙️ Kurlar</div>
     <div class="tab" data-tab="products">📦 Ürünler</div>
     <div class="tab" data-tab="history">📜 Geçmiş</div>
+    <div class="tab" data-tab="analytics">📈 Analitik</div>
   </div>
 
   <!-- DASHBOARD TAB -->
@@ -299,6 +300,16 @@
       <div id="schedule-times-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
       <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px">+ Saat Ekle</button>
       <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">Belirlenen saatlerde her gün otomatik güncellenir</div>
+
+      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:18px">
+        <div class="toggle-row">
+          <div class="toggle" id="auto-new-toggle" onclick="toggleAutoNew()"><div class="toggle-knob"></div></div>
+          <div>
+            <span>Yeni ürünleri otomatik fiyatla</span>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Mağazaya yeni ürün eklenince anında kura göre fiyatlanır</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -345,6 +356,37 @@
           <tbody id="history-tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS TAB -->
+  <div id="tab-analytics" style="display:none">
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="dash-card-label">Toplam Güncelleme</div>
+        <div class="dash-card-value" id="an-total-updates">—</div>
+        <div class="dash-card-sub">ürün fiyatı değiştirildi</div>
+      </div>
+      <div class="dash-card green">
+        <div class="dash-card-label">Senkronizasyon Sayısı</div>
+        <div class="dash-card-value" id="an-total-syncs">—</div>
+        <div class="dash-card-sub">toplam işlem</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Son 7 Gün — Günlük Güncelleme</div>
+      <div id="chart-daily" style="min-height:160px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Kur Trendi</div>
+      <div id="chart-rate" style="min-height:160px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">En Çok Güncellenen Ürünler</div>
+      <div id="top-products" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
   </div>
 
@@ -426,7 +468,7 @@ async function init() {
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
-  ['dashboard','settings','products','history'].forEach(t => {
+  ['dashboard','settings','products','history','analytics'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'products' && allProducts.length === 0) {
@@ -436,6 +478,9 @@ function switchTab(tab, el) {
   if (tab === 'history') {
     loadHistory();
     loadActivity();
+  }
+  if (tab === 'analytics') {
+    loadAnalytics();
   }
 }
 
@@ -538,6 +583,8 @@ async function loadSettings() {
     if (document.getElementById('rounding-select')) document.getElementById('rounding-select').value = s.rounding || 'none';
     if (document.getElementById('min-price-input')) document.getElementById('min-price-input').value = s.minPrice || 0;
     if (document.getElementById('threshold-input')) document.getElementById('threshold-input').value = s.rateThreshold || 0;
+    autoPriceNew = !!s.autoPriceNewProducts;
+    if (document.getElementById('auto-new-toggle')) document.getElementById('auto-new-toggle').classList.toggle('on', autoPriceNew);
 
     scheduleTimes = (s.scheduleTimes && s.scheduleTimes.length > 0) ? s.scheduleTimes : [s.scheduleTime || '09:00'];
 
@@ -550,6 +597,7 @@ async function loadSettings() {
 }
 
 let scheduleTimes = ['09:00'];
+let autoPriceNew = false;
 
 function renderScheduleTimes() {
   const list = document.getElementById('schedule-times-list');
@@ -656,6 +704,97 @@ function toggleAuto() {
   document.getElementById('auto-toggle').classList.toggle('on', autoUpdateOn);
 }
 
+function toggleAutoNew() {
+  autoPriceNew = !autoPriceNew;
+  document.getElementById('auto-new-toggle').classList.toggle('on', autoPriceNew);
+}
+
+// ── ANALİTİK ──
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`/api/analytics?shop=${SHOP}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('an-total-updates').textContent = (data.totalUpdates||0).toLocaleString('tr-TR');
+    document.getElementById('an-total-syncs').textContent = (data.totalSyncs||0).toLocaleString('tr-TR');
+
+    drawBarChart('chart-daily', data.dailyUpdates || [], 'date', 'count');
+    drawLineChart('chart-rate', data.rateTrend || []);
+    drawTopProducts(data.topProducts || []);
+  } catch(e) {
+    addLog('Analitik yüklenemedi: ' + e.message, 'err');
+  }
+}
+
+function drawBarChart(elId, data, xKey, yKey) {
+  const el = document.getElementById(elId);
+  if (!data.length) { el.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:20px;text-align:center">Veri yok</div>'; return; }
+
+  const max = Math.max(...data.map(d => d[yKey]), 1);
+  const w = 100 / data.length;
+
+  let bars = data.map((d, i) => {
+    const h = (d[yKey] / max) * 100;
+    const label = d[xKey].slice(5); // MM-DD
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end">
+        <div style="font-size:10px;font-family:var(--mono);color:var(--accent2)">${d[yKey]||''}</div>
+        <div style="width:60%;height:${Math.max(h,2)}px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:4px 4px 0 0;transition:height 0.3s"></div>
+        <div style="font-size:9px;font-family:var(--mono);color:var(--text3)">${label}</div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="display:flex;align-items:flex-end;gap:4px;height:140px;padding:10px 0">${bars}</div>`;
+}
+
+function drawLineChart(elId, data) {
+  const el = document.getElementById(elId);
+  if (data.length < 2) { el.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:20px;text-align:center">Yeterli veri yok</div>'; return; }
+
+  const rates = data.map(d => d.rate);
+  const min = Math.min(...rates), max = Math.max(...rates);
+  const range = max - min || 1;
+  const W = 600, H = 140, pad = 20;
+
+  const points = data.map((d, i) => {
+    const x = pad + (i / (data.length - 1)) * (W - 2*pad);
+    const y = H - pad - ((d.rate - min) / range) * (H - 2*pad);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const lastRate = rates[rates.length-1];
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:160px" preserveAspectRatio="none">
+      <polyline points="${points}" fill="none" stroke="url(#g1)" stroke-width="2.5"/>
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#7c6ef2"/><stop offset="100%" stop-color="#5de6c8"/>
+      </linearGradient></defs>
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text3);padding:0 20px">
+      <span>min ${min.toFixed(2)}</span>
+      <span style="color:var(--accent2)">güncel ${lastRate.toFixed(2)}</span>
+      <span>max ${max.toFixed(2)}</span>
+    </div>`;
+}
+
+function drawTopProducts(products) {
+  const el = document.getElementById('top-products');
+  if (!products.length) { el.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">Veri yok</div>'; return; }
+  const max = Math.max(...products.map(p => p.count), 1);
+  el.innerHTML = products.map(p => `
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text);margin-bottom:4px">${p.title}</div>
+        <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${(p.count/max)*100}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div>
+        </div>
+      </div>
+      <div style="font-size:12px;font-family:var(--mono);color:var(--accent2);min-width:60px;text-align:right">${p.count} kez</div>
+    </div>
+  `).join('');
+}
+
 async function saveSettings() {
   const btn = document.getElementById('save-btn-text');
   btn.innerHTML = '<span class="btn-spinner"></span> Kaydediliyor...';
@@ -674,6 +813,7 @@ async function saveSettings() {
         rounding: document.getElementById('rounding-select')?.value || 'none',
         minPrice: parseFloat(document.getElementById('min-price-input')?.value) || 0,
         rateThreshold: parseFloat(document.getElementById('threshold-input')?.value) || 0,
+        autoPriceNewProducts: autoPriceNew,
       })
     });
     addLog(`Ayarlar kaydedildi: ${baseCurrency} → ${targets.map(t=>t.code).join(', ')} (${targets.length} hedef)`, 'ok');
@@ -939,6 +1079,7 @@ async function showPreview() {
         rounding: document.getElementById('rounding-select')?.value || 'none',
         minPrice: parseFloat(document.getElementById('min-price-input')?.value) || 0,
         rateThreshold: parseFloat(document.getElementById('threshold-input')?.value) || 0,
+        autoPriceNewProducts: autoPriceNew,
       })
     });
 
