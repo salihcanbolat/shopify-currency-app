@@ -79,6 +79,23 @@ export async function initDb() {
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_activity_shop ON activity_log(shop)`);
 
+    // USD fiyat\u0131 bekleyen yeni \u00fcr\u00fcnler
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS pending_products (
+        id SERIAL PRIMARY KEY,
+        shop VARCHAR(255) NOT NULL,
+        product_id VARCHAR(64) NOT NULL,
+        product_title TEXT,
+        variant_id VARCHAR(64) NOT NULL,
+        variant_title TEXT,
+        current_price NUMERIC(12,2),
+        image TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(shop, variant_id)
+      )
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_pending_shop ON pending_products(shop)`);
+
     console.log("\u2705 Veritaban\u0131 tablolar\u0131 haz\u0131r");
   } catch(e) {
     console.error("❌ Veritabanı init hatası:", e.message);
@@ -289,5 +306,51 @@ export async function getLastBatch(shop) {
     return result.rows[0] || null;
   } catch(e) {
     return null;
+  }
+}
+
+// ── BEKLEYEN ÜRÜNLER (USD girilmemiş) ──
+export async function addPendingProduct(shop, p) {
+  try {
+    const db = getDb();
+    await db.query(`
+      INSERT INTO pending_products (shop, product_id, product_title, variant_id, variant_title, current_price, image)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)
+      ON CONFLICT (shop, variant_id) DO UPDATE SET
+        product_title = $3, variant_title = $5, current_price = $6, image = $7
+    `, [shop, p.productId, p.productTitle, p.variantId, p.variantTitle, p.currentPrice || null, p.image || null]);
+  } catch(e) {
+    console.error("Pending ürün ekleme hatası:", e.message);
+  }
+}
+
+export async function getPendingProducts(shop) {
+  try {
+    const db = getDb();
+    const result = await db.query(`
+      SELECT * FROM pending_products WHERE shop = $1 ORDER BY created_at DESC
+    `, [shop]);
+    return result.rows;
+  } catch(e) {
+    return [];
+  }
+}
+
+export async function removePendingProduct(shop, variantId) {
+  try {
+    const db = getDb();
+    await db.query(`DELETE FROM pending_products WHERE shop = $1 AND variant_id = $2`, [shop, variantId]);
+  } catch(e) {
+    console.error("Pending ürün silme hatası:", e.message);
+  }
+}
+
+export async function countPendingProducts(shop) {
+  try {
+    const db = getDb();
+    const result = await db.query(`SELECT COUNT(*) as cnt FROM pending_products WHERE shop = $1`, [shop]);
+    return parseInt(result.rows[0]?.cnt || 0);
+  } catch(e) {
+    return 0;
   }
 }

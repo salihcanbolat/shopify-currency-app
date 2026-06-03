@@ -3,7 +3,8 @@ import { getExchangeRate } from "./rateService.js";
 import { updateAllProductPrices, updateCollectionPrices, previewPrices, rollbackPrices } from "./priceUpdater.js";
 import { isPremium, getProductLimit } from "./billing.js";
 import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription,
-         getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch } from "./db.js";
+         getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch,
+         getPendingProducts, removePendingProduct, countPendingProducts } from "./db.js";
 
 export const apiRouter = express.Router();
 
@@ -353,6 +354,65 @@ apiRouter.post("/rollback", async (req, res) => {
   }
 });
 
+// GET /api/pending - USD bekleyen ürünler
+apiRouter.get("/pending", async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+  const pending = await getPendingProducts(shop);
+  res.json({ pending, count: pending.length });
+});
+
+// POST /api/pending/resolve - bekleyen ürüne USD ata ve fiyatla
+apiRouter.post("/pending/resolve", async (req, res) => {
+  const { shop, variantId, usdPrice } = req.body;
+  if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
+
+  const token = await getToken(shop);
+  if (!token) return res.status(401).json({ error: "Shop not authenticated" });
+
+  const settings = await getSettings(shop);
+  const pair = (settings?.currencies || [])[0] || { base: "USD", target: "TRY", margin: 0 };
+
+  try {
+    const rate = await getExchangeRate(pair.base, pair.target);
+    const effectiveRate = rate * (1 + (pair.margin || 0) / 100);
+    let tryPrice = parseFloat(usdPrice) * effectiveRate;
+
+    // Yuvarlama uygula
+    const rounding = settings?.rounding || "none";
+    const p = tryPrice;
+    if (rounding === "up_99") tryPrice = Math.ceil(p) - 0.01;
+    else if (rounding === "up_95") tryPrice = Math.ceil(p) - 0.05;
+    else if (rounding === "nearest_int") tryPrice = Math.round(p);
+    else if (rounding === "up_int") tryPrice = Math.ceil(p);
+    else if (rounding === "nearest_5") tryPrice = Math.round(p/5)*5;
+    else if (rounding === "nearest_10") tryPrice = Math.round(p/10)*10;
+    tryPrice = tryPrice.toFixed(2);
+
+    const minPrice = parseFloat(settings?.minPrice) || 0;
+    if (minPrice > 0) tryPrice = Math.max(parseFloat(tryPrice), minPrice).toFixed(2);
+
+    await fetch(`https://${shop}/admin/api/2024-01/variants/${variantId}.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
+      body: JSON.stringify({ variant: { id: variantId, price: tryPrice, compare_at_price: parseFloat(usdPrice).toFixed(2) } }),
+    });
+
+    await removePendingProduct(shop, variantId);
+    res.json({ success: true, tryPrice });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/pending/dismiss - bekleyen üründen çıkar (fiyatlamadan)
+apiRouter.post("/pending/dismiss", async (req, res) => {
+  const { shop, variantId } = req.body;
+  if (!shop || !variantId) return res.status(400).json({ error: "Missing params" });
+  await removePendingProduct(shop, variantId);
+  res.json({ success: true });
+});
+
 // GET /api/analytics - analitik veriler
 apiRouter.get("/analytics", async (req, res) => {
   const { shop } = req.query;
@@ -445,8 +505,10 @@ apiRouter.get("/dashboard", async (req, res) => {
     }
 
     const sub = getSubscription(shop);
+    const pendingCount = await countPendingProducts(shop);
     res.json({
       productCount: countData.count || 0,
+      pendingCount,
       lastUpdated: settings.lastUpdated || null,
       rates,
       autoUpdate: settings.autoUpdate || false,
