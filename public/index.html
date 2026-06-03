@@ -77,6 +77,23 @@
     .alert-card-sub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:3px}
     .source-info{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--text3)}
     .source-dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+    /* Üst durum şeridi */
+    .status-strip{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 20px;margin-bottom:20px;flex-wrap:wrap;font-family:var(--mono);font-size:12px}
+    .status-strip-item{display:flex;align-items:center;gap:7px;color:var(--text2)}
+    .status-strip-item b{color:var(--text);font-weight:500}
+    .status-strip-sep{width:1px;height:18px;background:var(--border)}
+    .status-strip-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+    .status-strip-pending{color:var(--accent3)}
+    /* Gelişmiş ayarlar accordion */
+    .advanced-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:14px 0;color:var(--text2);font-size:13px;font-weight:600;user-select:none;border-top:1px solid var(--border);margin-top:8px}
+    .advanced-toggle:hover{color:var(--text)}
+    .advanced-chevron{transition:transform 0.25s;font-size:11px;color:var(--text3)}
+    .advanced-toggle.open .advanced-chevron{transform:rotate(180deg)}
+    .advanced-content{display:none;animation:wizFade 0.25s ease;padding-top:8px}
+    .advanced-content.open{display:block}
+    /* Sub-section başlığı */
+    .subsection-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+    .subsection-hint{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;line-height:1.5}
     .rate-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
     .rate-card-pair{font-size:11px;font-family:var(--mono);color:var(--text3);margin-bottom:6px}
     .rate-card-val{font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-0.5px}
@@ -293,13 +310,24 @@
     <div class="status-badge"><div class="dot"></div><span id="status-text">Bağlı</span></div>
   </div>
 
-  <!-- Tabs -->
+  <!-- Üst Durum Şeridi -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-item"><span class="status-strip-dot"></span><span id="strip-rate">Kur yükleniyor…</span></div>
+    <div class="status-strip-sep"></div>
+    <div class="status-strip-item"><b id="strip-product-count">—</b> ürün</div>
+    <div class="status-strip-sep"></div>
+    <div class="status-strip-item"><span id="strip-last">Son güncelleme: —</span></div>
+    <div class="status-strip-item status-strip-pending" id="strip-pending" style="display:none">
+      <div class="status-strip-sep"></div>
+      <span>⏳ <b id="strip-pending-count">0</b> ürün bekliyor</span>
+    </div>
+  </div>
+
+  <!-- Tabs (3 ana sekme) -->
   <div class="tabs">
-    <div class="tab active" data-tab="dashboard">📊 Dashboard</div>
-    <div class="tab" data-tab="settings">⚙️ Kurlar</div>
+    <div class="tab active" data-tab="dashboard">🏠 Ana Sayfa</div>
     <div class="tab" data-tab="products">📦 Ürünler</div>
-    <div class="tab" data-tab="history">📜 Geçmiş</div>
-    <div class="tab" data-tab="analytics">📈 Analitik</div>
+    <div class="tab" data-tab="settings">⚙️ Ayarlar</div>
   </div>
 
   <!-- DASHBOARD TAB -->
@@ -366,148 +394,20 @@
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-sync" onclick="syncAll()"><span id="sync-btn-text">⚡ Tümünü Senkronize Et</span></button>
+      <button class="btn btn-sync" onclick="syncAll()"><span id="sync-btn-text">🔄 Tüm Fiyatları Şimdi Güncelle</span></button>
     </div>
 
-    <div class="panel-title">İşlem Geçmişi</div>
-    <div class="log-box" id="log-box">
-      <div class="log-entry"><span class="log-time">—</span><span class="log-msg">Uygulama başlatıldı.</span></div>
-    </div>
-  </div>
-
-  <!-- SETTINGS TAB -->
-  <div id="tab-settings" style="display:none">
-
-    <div class="panel">
-      <div class="panel-title">Ana Para Birimi</div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-        <select class="pair-select" id="base-currency-select" onchange="onBaseChange()" style="font-size:15px;padding:10px 14px">
-        </select>
-        <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">kaynak para birimi olarak seçildi</span>
-      </div>
-
-      <div class="panel-title">Hedef Para Birimleri</div>
-      <div id="target-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
-      <button class="add-pair-btn" onclick="addTarget()">+ Hedef Para Birimi Ekle</button>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Fiyatlandırma Kuralları</div>
-
-      <div style="margin-bottom:18px">
-        <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Yuvarlama</label>
-        <select class="pair-select" id="rounding-select" style="width:100%;max-width:340px">
-          <option value="none">Yuvarlama yok (₺302,47)</option>
-          <option value="up_99">,99 ile bitir (₺302,99)</option>
-          <option value="up_95">,95 ile bitir (₺302,95)</option>
-          <option value="nearest_int">En yakın tam sayı (₺302)</option>
-          <option value="up_int">Yukarı tam sayı (₺303)</option>
-          <option value="nearest_5">En yakın 5'e (₺300)</option>
-          <option value="nearest_10">En yakın 10'a (₺300)</option>
-        </select>
-      </div>
-
-      <div style="display:flex;gap:24px;flex-wrap:wrap">
-        <div>
-          <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Minimum Fiyat Koruması (TRY)</label>
-          <div class="pair-margin" style="width:160px">
-            <input type="number" id="min-price-input" value="0" min="0" step="1" placeholder="0" style="width:120px"/>
-            <span>₺ alt sınır</span>
-          </div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Fiyat bu değerin altına inmez</div>
-        </div>
-
-        <div>
-          <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Kur Değişim Eşiği</label>
-          <div class="pair-margin" style="width:160px">
-            <input type="number" id="threshold-input" value="0" min="0" max="20" step="0.1" placeholder="0" style="width:120px"/>
-            <span>% eşik</span>
-          </div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Bu orandan az değişimde güncelleme yapılmaz</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Zamanlama</div>
-      <div class="toggle-row" style="margin-bottom:16px">
-        <div class="toggle on" id="auto-toggle" onclick="toggleAuto()"><div class="toggle-knob"></div></div>
-        <span>Otomatik güncelleme</span>
-      </div>
-      <div id="schedule-times-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
-      <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px">+ Saat Ekle</button>
-      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">Belirlenen saatlerde her gün otomatik güncellenir</div>
-
-      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:18px">
-        <div class="toggle-row">
-          <div class="toggle" id="auto-new-toggle" onclick="toggleAutoNew()"><div class="toggle-knob"></div></div>
-          <div>
-            <span>Yeni ürünleri otomatik fiyatla</span>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Mağazaya yeni ürün eklenince anında kura göre fiyatlanır</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="showPreview()"><span id="preview-btn-text">👁 Önizleme</span></button>
-      <button class="btn btn-primary" onclick="saveSettings()"><span id="save-btn-text">💾 Kaydet & Senkronize Et</span></button>
-    </div>
-
-    <!-- Önizleme sonucu -->
-    <div id="preview-panel" class="panel" style="display:none">
-      <div class="panel-title">Önizleme — <span id="preview-count" style="color:var(--accent2)"></span></div>
-      <div style="overflow-x:auto">
-        <table class="product-table">
-          <thead><tr><th>Ürün</th><th>Eski Fiyat</th><th>Yeni Fiyat</th></tr></thead>
-          <tbody id="preview-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- HISTORY TAB -->
-  <div id="tab-history" style="display:none">
-    <div class="panel">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-        <div class="panel-title" style="margin-bottom:0">Son Güncelleme — Geri Al</div>
-        <button class="btn btn-secondary" style="padding:9px 16px;font-size:12px;flex:none" onclick="rollbackLast()">
-          <span id="rollback-btn-text">↩ Son Güncellemeyi Geri Al</span>
-        </button>
-      </div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">Son toplu güncellemedeki tüm fiyatları eski haline döndürür</div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">İşlem Kayıtları</div>
-      <div id="activity-list" style="display:flex;flex-direction:column;gap:8px">
-        <div class="loading-wrap" style="padding:20px"><div class="loading-spinner"></div></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Fiyat Değişim Geçmişi</div>
-      <div style="overflow-x:auto">
-        <table class="product-table">
-          <thead><tr><th>Ürün</th><th>Eski</th><th>Yeni</th><th>USD</th><th>Tarih</th></tr></thead>
-          <tbody id="history-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ANALYTICS TAB -->
-  <div id="tab-analytics" style="display:none">
-    <div class="dash-grid">
+    <!-- Analitik özet -->
+    <div class="dash-grid" style="margin-top:8px">
       <div class="dash-card">
         <div class="dash-card-label">Toplam Güncelleme</div>
         <div class="dash-card-value" id="an-total-updates">—</div>
         <div class="dash-card-sub">ürün fiyatı değiştirildi</div>
       </div>
       <div class="dash-card green">
-        <div class="dash-card-label">Senkronizasyon Sayısı</div>
+        <div class="dash-card-label">İşlem Sayısı</div>
         <div class="dash-card-value" id="an-total-syncs">—</div>
-        <div class="dash-card-sub">toplam işlem</div>
+        <div class="dash-card-sub">toplam güncelleme</div>
       </div>
     </div>
 
@@ -521,9 +421,143 @@
       <div id="chart-rate" style="min-height:160px"></div>
     </div>
 
+    <!-- Son işlemler + geri al -->
     <div class="panel">
-      <div class="panel-title">En Çok Güncellenen Ürünler</div>
-      <div id="top-products" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div class="panel-title" style="margin-bottom:0">Son İşlemler</div>
+        <button class="btn btn-secondary" style="padding:8px 14px;font-size:12px;flex:none" onclick="rollbackLast()">
+          <span id="rollback-btn-text">↩ Son Güncellemeyi Geri Al</span>
+        </button>
+      </div>
+      <div id="activity-list" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">Henüz işlem yok</div>
+      </div>
+    </div>
+
+    <!-- En çok güncellenen + canlı log (detay) -->
+    <div class="panel">
+      <div class="advanced-toggle" id="detail-toggle" onclick="toggleDashDetails()">
+        <span class="advanced-chevron">▾</span>
+        <span>Detaylı geçmiş ve kayıtlar</span>
+      </div>
+      <div class="advanced-content" id="detail-content">
+        <div class="subsection-label" style="margin-top:10px">En Çok Güncellenen Ürünler</div>
+        <div id="top-products" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+
+        <div class="subsection-label">Fiyat Değişim Geçmişi</div>
+        <div style="overflow-x:auto;margin-bottom:20px">
+          <table class="product-table">
+            <thead><tr><th>Ürün</th><th>Eski</th><th>Yeni</th><th>USD</th><th>Tarih</th></tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="subsection-label">Canlı Kayıt</div>
+        <div class="log-box" id="log-box">
+          <div class="log-entry"><span class="log-time">—</span><span class="log-msg">Uygulama başlatıldı.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" style="display:none">
+
+    <!-- TEMEL AYARLAR -->
+    <div class="panel">
+      <div class="panel-title">Para Birimi</div>
+      <div class="subsection-hint">Ürünlerinizi hangi para biriminde aldığınızı ve müşterilere hangi para biriminde göstereceğinizi seçin.</div>
+
+      <div class="subsection-label">Ana para birimi (ürünlerinizin alış birimi)</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+        <select class="pair-select" id="base-currency-select" onchange="onBaseChange()" style="font-size:15px;padding:10px 14px"></select>
+      </div>
+
+      <div class="subsection-label">Hedef para birimi (müşterinin gördüğü)</div>
+      <div class="subsection-hint">Her hedefe isterseniz kâr marjı ekleyin (kur dalgalanmasına karşı tampon).</div>
+      <div id="target-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+      <button class="add-pair-btn" onclick="addTarget()">+ Hedef Para Birimi Ekle</button>
+    </div>
+
+    <!-- OTOMATİK GÜNCELLEME -->
+    <div class="panel">
+      <div class="panel-title">Otomatik Güncelleme</div>
+      <div class="toggle-row" style="margin-bottom:6px">
+        <div class="toggle on" id="auto-toggle" onclick="toggleAuto()"><div class="toggle-knob"></div></div>
+        <div>
+          <span>Her gün otomatik güncelle</span>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Belirlediğiniz saatlerde fiyatlar güncel kura göre otomatik yenilenir</div>
+        </div>
+      </div>
+      <div id="schedule-times-list" style="display:flex;flex-direction:column;gap:8px;margin:14px 0 12px"></div>
+      <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px">+ Saat Ekle</button>
+    </div>
+
+    <!-- GELİŞMİŞ AYARLAR (katlanır) -->
+    <div class="panel">
+      <div class="advanced-toggle" id="advanced-toggle" onclick="toggleAdvanced()" style="border-top:none;padding-top:0">
+        <span class="advanced-chevron">▾</span>
+        <span>Gelişmiş ayarlar</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;font-family:var(--mono)">— yuvarlama, fiyat koruma, yeni ürünler</span>
+      </div>
+      <div class="advanced-content" id="advanced-content">
+
+        <div class="subsection-label" style="margin-top:14px">Fiyat Yuvarlama</div>
+        <div class="subsection-hint">Çevrilen fiyatları daha düzgün göstermek için yuvarlayın.</div>
+        <select class="pair-select" id="rounding-select" style="width:100%;max-width:340px;margin-bottom:22px">
+          <option value="none">Yuvarlama yok (₺302,47)</option>
+          <option value="up_99">,99 ile bitir (₺302,99)</option>
+          <option value="up_95">,95 ile bitir (₺302,95)</option>
+          <option value="nearest_int">En yakın tam sayı (₺302)</option>
+          <option value="up_int">Yukarı tam sayı (₺303)</option>
+          <option value="nearest_5">En yakın 5'e (₺300)</option>
+          <option value="nearest_10">En yakın 10'a (₺300)</option>
+        </select>
+
+        <div style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:22px">
+          <div>
+            <div class="subsection-label">Minimum Fiyat Koruması</div>
+            <div class="pair-margin" style="width:170px">
+              <input type="number" id="min-price-input" value="0" min="0" step="1" placeholder="0" style="width:120px"/>
+              <span>₺ alt sınır</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Fiyat bu değerin altına inmez</div>
+          </div>
+          <div>
+            <div class="subsection-label">Kur Değişim Eşiği</div>
+            <div class="pair-margin" style="width:170px">
+              <input type="number" id="threshold-input" value="0" min="0" max="20" step="0.1" placeholder="0" style="width:120px"/>
+              <span>% eşik</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Bu orandan az değişimde güncelleme atlanır</div>
+          </div>
+        </div>
+
+        <div class="subsection-label">Yeni Ürünler</div>
+        <div class="toggle-row" style="margin-top:8px">
+          <div class="toggle" id="auto-new-toggle" onclick="toggleAutoNew()"><div class="toggle-knob"></div></div>
+          <div>
+            <span>Yeni ürünleri takip et</span>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Mağazaya yeni ürün eklenince "dolar fiyatı bekleyenler" listesine alınır</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="showPreview()"><span id="preview-btn-text">👁 Önizleme</span></button>
+      <button class="btn btn-primary" onclick="saveSettings()"><span id="save-btn-text">💾 Kaydet</span></button>
+    </div>
+
+    <!-- Önizleme sonucu -->
+    <div id="preview-panel" class="panel" style="display:none">
+      <div class="panel-title">Önizleme — <span id="preview-count" style="color:var(--accent2)"></span></div>
+      <div style="overflow-x:auto">
+        <table class="product-table">
+          <thead><tr><th>Ürün</th><th>Eski Fiyat</th><th>Yeni Fiyat</th></tr></thead>
+          <tbody id="preview-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -561,7 +595,7 @@
             <input type="text" id="search-input" placeholder="Ürün ara..." oninput="filterProducts()"/>
           </div>
           <button class="btn btn-secondary" style="padding:8px 14px;font-size:12px" onclick="loadProducts()">↻</button>
-          <button class="btn btn-sync" style="padding:8px 14px;font-size:12px" onclick="syncCollection()"><span id="col-sync-text">⚡ Koleksiyonu Senkronize Et</span></button>
+          <button class="btn btn-sync" style="padding:8px 14px;font-size:12px" onclick="syncCollection()"><span id="col-sync-text">🔄 Bu Koleksiyonu Güncelle</span></button>
           <button class="btn btn-primary" style="padding:8px 14px;font-size:12px" onclick="saveAllPrices()"><span id="bulk-save-text">💾 Tümünü Kaydet</span></button>
         </div>
       </div>
@@ -613,6 +647,8 @@ async function init() {
     CURRENCIES.push(...currencies);
     await loadSettings();
     await loadDashboard();
+    loadAnalytics();
+    loadActivity();
   } catch(e) {
     addLog('Bağlantı hatası: ' + e.message, 'err');
   }
@@ -677,11 +713,16 @@ async function loadPending() {
     pendingProducts = data.pending || [];
 
     const alert = document.getElementById('pending-alert');
+    const strip = document.getElementById('strip-pending');
     if (data.count > 0) {
       document.getElementById('pending-count-text').textContent = data.count;
       if (alert) alert.style.display = 'flex';
+      const sc = document.getElementById('strip-pending-count');
+      if (sc) sc.textContent = data.count;
+      if (strip) strip.style.display = 'flex';
     } else {
       if (alert) alert.style.display = 'none';
+      if (strip) strip.style.display = 'none';
     }
 
     renderPending();
@@ -774,22 +815,21 @@ async function dismissPending(variantId) {
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
-  ['dashboard','settings','products','history','analytics'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  ['dashboard','settings','products'].forEach(t => {
+    const elem = document.getElementById('tab-' + t);
+    if (elem) elem.style.display = t === tab ? 'block' : 'none';
   });
+  if (tab === 'dashboard') {
+    loadDashboard();
+    loadAnalytics();
+    loadActivity();
+  }
   if (tab === 'products') {
     loadPending();
     if (allProducts.length === 0) {
       loadCollections();
       loadProducts();
     }
-  }
-  if (tab === 'history') {
-    loadHistory();
-    loadActivity();
-  }
-  if (tab === 'analytics') {
-    loadAnalytics();
   }
 }
 
@@ -810,10 +850,24 @@ async function loadDashboard() {
 
     document.getElementById('dash-product-count').textContent = data.productCount.toLocaleString('tr-TR');
 
+    // Üst durum şeridi
+    const stripCount = document.getElementById('strip-product-count');
+    if (stripCount) stripCount.textContent = data.productCount.toLocaleString('tr-TR');
+
     if (data.lastUpdated) {
       const d = new Date(data.lastUpdated);
       document.getElementById('dash-last-updated').textContent = d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
       document.getElementById('dash-last-updated-sub').textContent = d.toLocaleDateString('tr-TR');
+      const stripLast = document.getElementById('strip-last');
+      if (stripLast) {
+        const today = new Date().toDateString() === d.toDateString();
+        stripLast.textContent = 'Son güncelleme: ' + (today
+          ? 'bugün ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})
+          : d.toLocaleDateString('tr-TR'));
+      }
+    } else {
+      const stripLast = document.getElementById('strip-last');
+      if (stripLast) stripLast.textContent = 'Henüz güncellenmedi';
     }
 
     document.getElementById('dash-auto').textContent = data.autoUpdate ? 'Açık' : 'Kapalı';
@@ -851,8 +905,13 @@ async function loadDashboard() {
     currentRates = {};
     const rateCards = document.getElementById('rate-cards');
     rateCards.innerHTML = '';
-    (data.rates || []).forEach(r => {
+    (data.rates || []).forEach((r, idx) => {
       currentRates[`${r.base}_${r.target}`] = r.effectiveRate;
+      // İlk kuru durum şeridine yaz
+      if (idx === 0) {
+        const stripRate = document.getElementById('strip-rate');
+        if (stripRate) stripRate.innerHTML = `<b>${r.base}/${r.target} ${r.effectiveRate.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b>`;
+      }
       const card = document.createElement('div');
       card.className = 'rate-card';
       card.innerHTML = `
@@ -1139,9 +1198,9 @@ async function saveSettings() {
       })
     });
     addLog(`Ayarlar kaydedildi: ${baseCurrency} → ${targets.map(t=>t.code).join(', ')} (${targets.length} hedef)`, 'ok');
-  } catch(e) { showToast('✗ Kaydetme hatası', 'error'); btn.textContent = '💾 Kaydet & Senkronize Et'; return; }
+  } catch(e) { showToast('✗ Kaydetme hatası', 'error'); btn.textContent = '💾 Kaydet'; return; }
 
-  btn.innerHTML = '<span class="btn-spinner"></span> Senkronize ediliyor...';
+  btn.innerHTML = '<span class="btn-spinner"></span> Güncelleniyor...';
   try {
     const res = await fetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1153,15 +1212,15 @@ async function saveSettings() {
       addLog(`✓ ${data.updatedCount} ürün güncellendi`, 'ok');
       await loadDashboard();
     } else throw new Error(data.error);
-  } catch(e) { showToast('✗ Senkronizasyon hatası', 'error'); addLog('Hata: '+e.message,'err'); }
-  finally { btn.textContent = '💾 Kaydet & Senkronize Et'; }
+  } catch(e) { showToast('✗ Güncelleme hatası', 'error'); addLog('Hata: '+e.message,'err'); }
+  finally { btn.textContent = '💾 Kaydet'; }
 }
 
 async function syncAll() {
   const btn = document.getElementById('sync-btn-text');
-  btn.innerHTML = '<span class="btn-spinner dark"></span> Senkronize ediliyor...';
+  btn.innerHTML = '<span class="btn-spinner dark"></span> Güncelleniyor...';
   document.querySelector('[onclick="syncAll()"]').disabled = true;
-  addLog('Tüm ürünler senkronize ediliyor...', '');
+  addLog('Tüm ürün fiyatları güncelleniyor...', '');
   try {
     const res = await fetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1174,7 +1233,7 @@ async function syncAll() {
       await loadDashboard();
     } else throw new Error(data.error);
   } catch(e) { showToast('✗ Hata', 'error'); addLog('Hata: '+e.message,'err'); }
-  finally { btn.textContent = '⚡ Tümünü Senkronize Et'; document.querySelector('[onclick="syncAll()"]').disabled = false; }
+  finally { btn.textContent = '🔄 Tüm Fiyatları Şimdi Güncelle'; document.querySelector('[onclick="syncAll()"]').disabled = false; }
 }
 
 // ── COLLECTIONS ──
@@ -1329,13 +1388,13 @@ async function saveAllPrices() {
   btn.textContent = '💾 Tümünü Kaydet';
   document.querySelector('[onclick="saveAllPrices()"]').disabled = false;
   showToast(`✓ ${saved} ürün kaydedildi`, 'success');
-  addLog(`✓ ${saved} ürün toplu kaydedildi`, 'ok');
+  addLog(`✓ ${saved} ürün kaydedildi`, 'ok');
   setTimeout(() => document.querySelectorAll('.save-btn.saved').forEach(b => { b.textContent='Kaydet'; b.classList.remove('saved'); }), 3000);
 }
 
 async function syncCollection() {
   const btn = document.getElementById('col-sync-text');
-  btn.innerHTML = '<span class="btn-spinner dark"></span> Senkronize ediliyor...';
+  btn.innerHTML = '<span class="btn-spinner dark"></span> Güncelleniyor...';
   document.querySelector('[onclick="syncCollection()"]').disabled = true;
 
   try {
@@ -1346,11 +1405,11 @@ async function syncCollection() {
     const data = await res.json();
     if (data.success) {
       showToast(`✓ ${data.updatedCount} ürün güncellendi`, 'success');
-      addLog(`✓ Koleksiyon senkronize edildi: ${data.updatedCount} ürün`, 'ok');
+      addLog(`✓ Koleksiyon güncellendi: ${data.updatedCount} ürün`, 'ok');
       loadProducts();
     } else throw new Error(data.error);
   } catch(e) { showToast('✗ Hata', 'error'); }
-  finally { btn.textContent = '⚡ Koleksiyonu Senkronize Et'; document.querySelector('[onclick="syncCollection()"]').disabled = false; }
+  finally { btn.textContent = '🔄 Bu Koleksiyonu Güncelle'; document.querySelector('[onclick="syncCollection()"]').disabled = false; }
 }
 
 function filterProducts() {
@@ -1517,6 +1576,21 @@ async function rollbackLast() {
     btn.textContent = '↩ Son Güncellemeyi Geri Al';
     document.querySelector('[onclick="rollbackLast()"]').disabled = false;
   }
+}
+
+function toggleAdvanced() {
+  const toggle = document.getElementById('advanced-toggle');
+  const cont = document.getElementById('advanced-content');
+  const open = cont.classList.toggle('open');
+  toggle.classList.toggle('open', open);
+}
+
+function toggleDashDetails() {
+  const toggle = document.getElementById('detail-toggle');
+  const cont = document.getElementById('detail-content');
+  const open = cont.classList.toggle('open');
+  toggle.classList.toggle('open', open);
+  if (open) loadHistory();
 }
 
 function addLog(msg, type) {
