@@ -151,6 +151,12 @@
     .search-box input{background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--mono);width:100%}
     .search-box input::placeholder{color:var(--text3)}
     .product-count{font-size:11px;font-family:var(--mono);color:var(--text3)}
+    .filter-chip{padding:6px 14px;border-radius:100px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.15s}
+    .filter-chip:hover{border-color:var(--border-active);color:var(--text2)}
+    .filter-chip.active{background:rgba(124,110,242,0.12);border-color:var(--accent);color:var(--text)}
+    .lang-switch{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px}
+    .lang-btn{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.15s}
+    .lang-btn.active{background:var(--surface3);color:var(--text)}
 
     .product-table{width:100%;border-collapse:collapse}
     .product-table th{text-align:left;font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:0 10px 10px;border-bottom:1px solid var(--border)}
@@ -307,7 +313,13 @@
         <div class="logo-sub">Shopify Currency Converter</div>
       </div>
     </div>
-    <div class="status-badge"><div class="dot"></div><span id="status-text">Bağlı</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="lang-switch">
+        <button class="lang-btn active" data-lang="tr" onclick="setLang('tr')">TR</button>
+        <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+      </div>
+      <div class="status-badge"><div class="dot"></div><span id="status-text" data-i18n="connected">Bağlı</span></div>
+    </div>
   </div>
 
   <!-- Üst Durum Şeridi -->
@@ -325,26 +337,26 @@
 
   <!-- Tabs (3 ana sekme) -->
   <div class="tabs">
-    <div class="tab active" data-tab="dashboard">🏠 Ana Sayfa</div>
-    <div class="tab" data-tab="products">📦 Ürünler</div>
-    <div class="tab" data-tab="settings">⚙️ Ayarlar</div>
+    <div class="tab active" data-tab="dashboard" data-i18n="tab_home">🏠 Ana Sayfa</div>
+    <div class="tab" data-tab="products" data-i18n="tab_products">📦 Ürünler</div>
+    <div class="tab" data-tab="settings" data-i18n="tab_settings">⚙️ Ayarlar</div>
   </div>
 
   <!-- DASHBOARD TAB -->
   <div id="tab-dashboard">
     <div class="dash-grid" id="dash-grid">
       <div class="dash-card">
-        <div class="dash-card-label">Toplam Ürün</div>
+        <div class="dash-card-label" data-i18n="dash_total_product">Toplam Ürün</div>
         <div class="dash-card-value" id="dash-product-count">—</div>
-        <div class="dash-card-sub" id="dash-product-limit">mağazada aktif</div>
+        <div class="dash-card-sub" id="dash-product-limit" data-i18n="dash_active">mağazada aktif</div>
       </div>
       <div class="dash-card green">
-        <div class="dash-card-label">Son Güncelleme</div>
+        <div class="dash-card-label" data-i18n="dash_last_update">Son Güncelleme</div>
         <div class="dash-card-value" style="font-size:18px" id="dash-last-updated">—</div>
         <div class="dash-card-sub" id="dash-last-updated-sub">henüz güncellenmedi</div>
       </div>
       <div class="dash-card amber">
-        <div class="dash-card-label">Otomatik Güncelleme</div>
+        <div class="dash-card-label" data-i18n="dash_auto">Otomatik Güncelleme</div>
         <div class="dash-card-value" style="font-size:18px" id="dash-auto">—</div>
         <div class="dash-card-sub" id="dash-schedule">—</div>
       </div>
@@ -381,7 +393,7 @@
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div class="panel-title" style="margin-bottom:0">Güncel Kurlar</div>
+      <div class="panel-title" style="margin-bottom:0" data-i18n="current_rates">Güncel Kurlar</div>
       <div class="source-info" id="rate-source" title="Kurlar bu kaynaktan canlı alınır">
         <span class="source-dot"></span>
         <span>Canlı kur · ExchangeRate-API</span>
@@ -394,39 +406,39 @@
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-sync" onclick="syncAll()"><span id="sync-btn-text">🔄 Tüm Fiyatları Şimdi Güncelle</span></button>
+      <button class="btn btn-sync" onclick="syncAll()"><span id="sync-btn-text" data-i18n="update_all">🔄 Tüm Fiyatları Şimdi Güncelle</span></button>
     </div>
 
     <!-- Analitik özet -->
     <div class="dash-grid" style="margin-top:8px">
       <div class="dash-card">
-        <div class="dash-card-label">Toplam Güncelleme</div>
+        <div class="dash-card-label" data-i18n="total_updates">Toplam Güncelleme</div>
         <div class="dash-card-value" id="an-total-updates">—</div>
         <div class="dash-card-sub">ürün fiyatı değiştirildi</div>
       </div>
       <div class="dash-card green">
-        <div class="dash-card-label">İşlem Sayısı</div>
+        <div class="dash-card-label" data-i18n="sync_count">İşlem Sayısı</div>
         <div class="dash-card-value" id="an-total-syncs">—</div>
         <div class="dash-card-sub">toplam güncelleme</div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Son 7 Gün — Günlük Güncelleme</div>
+      <div class="panel-title" data-i18n="daily_7">Son 7 Gün — Günlük Güncelleme</div>
       <div id="chart-daily" style="min-height:160px"></div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Kur Trendi</div>
+      <div class="panel-title" data-i18n="rate_trend">Kur Trendi</div>
       <div id="chart-rate" style="min-height:160px"></div>
     </div>
 
     <!-- Son işlemler + geri al -->
     <div class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-        <div class="panel-title" style="margin-bottom:0">Son İşlemler</div>
+        <div class="panel-title" style="margin-bottom:0" data-i18n="recent_actions">Son İşlemler</div>
         <button class="btn btn-secondary" style="padding:8px 14px;font-size:12px;flex:none" onclick="rollbackLast()">
-          <span id="rollback-btn-text">↩ Son Güncellemeyi Geri Al</span>
+          <span id="rollback-btn-text" data-i18n="rollback">↩ Son Güncellemeyi Geri Al</span>
         </button>
       </div>
       <div id="activity-list" style="display:flex;flex-direction:column;gap:8px">
@@ -438,13 +450,13 @@
     <div class="panel">
       <div class="advanced-toggle" id="detail-toggle" onclick="toggleDashDetails()">
         <span class="advanced-chevron">▾</span>
-        <span>Detaylı geçmiş ve kayıtlar</span>
+        <span data-i18n="detail_history">Detaylı geçmiş ve kayıtlar</span>
       </div>
       <div class="advanced-content" id="detail-content">
-        <div class="subsection-label" style="margin-top:10px">En Çok Güncellenen Ürünler</div>
+        <div class="subsection-label" style="margin-top:10px" data-i18n="top_products">En Çok Güncellenen Ürünler</div>
         <div id="top-products" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
 
-        <div class="subsection-label">Fiyat Değişim Geçmişi</div>
+        <div class="subsection-label" data-i18n="price_history">Fiyat Değişim Geçmişi</div>
         <div style="overflow-x:auto;margin-bottom:20px">
           <table class="product-table">
             <thead><tr><th>Ürün</th><th>Eski</th><th>Yeni</th><th>USD</th><th>Tarih</th></tr></thead>
@@ -452,7 +464,7 @@
           </table>
         </div>
 
-        <div class="subsection-label">Canlı Kayıt</div>
+        <div class="subsection-label" data-i18n="live_log">Canlı Kayıt</div>
         <div class="log-box" id="log-box">
           <div class="log-entry"><span class="log-time">—</span><span class="log-msg">Uygulama başlatıldı.</span></div>
         </div>
@@ -465,45 +477,45 @@
 
     <!-- TEMEL AYARLAR -->
     <div class="panel">
-      <div class="panel-title">Para Birimi</div>
-      <div class="subsection-hint">Ürünlerinizi hangi para biriminde aldığınızı ve müşterilere hangi para biriminde göstereceğinizi seçin.</div>
+      <div class="panel-title" data-i18n="currency">Para Birimi</div>
+      <div class="subsection-hint" data-i18n="currency_hint">Ürünlerinizi hangi para biriminde aldığınızı ve müşterilere hangi para biriminde göstereceğinizi seçin.</div>
 
-      <div class="subsection-label">Ana para birimi (ürünlerinizin alış birimi)</div>
+      <div class="subsection-label" data-i18n="base_label">Ana para birimi (ürünlerinizin alış birimi)</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
         <select class="pair-select" id="base-currency-select" onchange="onBaseChange()" style="font-size:15px;padding:10px 14px"></select>
       </div>
 
-      <div class="subsection-label">Hedef para birimi (müşterinin gördüğü)</div>
-      <div class="subsection-hint">Her hedefe isterseniz kâr marjı ekleyin (kur dalgalanmasına karşı tampon).</div>
+      <div class="subsection-label" data-i18n="target_label">Hedef para birimi (müşterinin gördüğü)</div>
+      <div class="subsection-hint" data-i18n="target_hint">Her hedefe isterseniz kâr marjı ekleyin (kur dalgalanmasına karşı tampon).</div>
       <div id="target-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
-      <button class="add-pair-btn" onclick="addTarget()">+ Hedef Para Birimi Ekle</button>
+      <button class="add-pair-btn" onclick="addTarget()" data-i18n="add_target">+ Hedef Para Birimi Ekle</button>
     </div>
 
     <!-- OTOMATİK GÜNCELLEME -->
     <div class="panel">
-      <div class="panel-title">Otomatik Güncelleme</div>
+      <div class="panel-title" data-i18n="auto_update">Otomatik Güncelleme</div>
       <div class="toggle-row" style="margin-bottom:6px">
         <div class="toggle on" id="auto-toggle" onclick="toggleAuto()"><div class="toggle-knob"></div></div>
         <div>
-          <span>Her gün otomatik güncelle</span>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Belirlediğiniz saatlerde fiyatlar güncel kura göre otomatik yenilenir</div>
+          <span data-i18n="auto_daily">Her gün otomatik güncelle</span>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px"><span data-i18n="auto_daily_hint">Belirlediğiniz saatlerde fiyatlar güncel kura göre otomatik yenilenir</span></div>
         </div>
       </div>
       <div id="schedule-times-list" style="display:flex;flex-direction:column;gap:8px;margin:14px 0 12px"></div>
-      <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px">+ Saat Ekle</button>
+      <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px" data-i18n="add_time">+ Saat Ekle</button>
     </div>
 
     <!-- GELİŞMİŞ AYARLAR (katlanır) -->
     <div class="panel">
       <div class="advanced-toggle" id="advanced-toggle" onclick="toggleAdvanced()" style="border-top:none;padding-top:0">
         <span class="advanced-chevron">▾</span>
-        <span>Gelişmiş ayarlar</span>
-        <span style="font-size:11px;color:var(--text3);font-weight:400;font-family:var(--mono)">— yuvarlama, fiyat koruma, yeni ürünler</span>
+        <span data-i18n="advanced">Gelişmiş ayarlar</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;font-family:var(--mono)" data-i18n="advanced_hint">— yuvarlama, fiyat koruma, yeni ürünler</span>
       </div>
       <div class="advanced-content" id="advanced-content">
 
-        <div class="subsection-label" style="margin-top:14px">Fiyat Yuvarlama</div>
-        <div class="subsection-hint">Çevrilen fiyatları daha düzgün göstermek için yuvarlayın.</div>
+        <div class="subsection-label" style="margin-top:14px" data-i18n="rounding">Fiyat Yuvarlama</div>
+        <div class="subsection-hint" data-i18n="rounding_hint">Çevrilen fiyatları daha düzgün göstermek için yuvarlayın.</div>
         <select class="pair-select" id="rounding-select" style="width:100%;max-width:340px;margin-bottom:22px">
           <option value="none">Yuvarlama yok (₺302,47)</option>
           <option value="up_99">,99 ile bitir (₺302,99)</option>
@@ -516,7 +528,7 @@
 
         <div style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:22px">
           <div>
-            <div class="subsection-label">Minimum Fiyat Koruması</div>
+            <div class="subsection-label" data-i18n="min_price">Minimum Fiyat Koruması</div>
             <div class="pair-margin" style="width:170px">
               <input type="number" id="min-price-input" value="0" min="0" step="1" placeholder="0" style="width:120px"/>
               <span>₺ alt sınır</span>
@@ -524,7 +536,7 @@
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Fiyat bu değerin altına inmez</div>
           </div>
           <div>
-            <div class="subsection-label">Kur Değişim Eşiği</div>
+            <div class="subsection-label" data-i18n="threshold">Kur Değişim Eşiği</div>
             <div class="pair-margin" style="width:170px">
               <input type="number" id="threshold-input" value="0" min="0" max="20" step="0.1" placeholder="0" style="width:120px"/>
               <span>% eşik</span>
@@ -533,11 +545,11 @@
           </div>
         </div>
 
-        <div class="subsection-label">Yeni Ürünler</div>
+        <div class="subsection-label" data-i18n="new_products">Yeni Ürünler</div>
         <div class="toggle-row" style="margin-top:8px">
           <div class="toggle" id="auto-new-toggle" onclick="toggleAutoNew()"><div class="toggle-knob"></div></div>
           <div>
-            <span>Yeni ürünleri takip et</span>
+            <span data-i18n="track_new">Yeni ürünleri takip et</span>
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Mağazaya yeni ürün eklenince "dolar fiyatı bekleyenler" listesine alınır</div>
           </div>
         </div>
@@ -545,8 +557,8 @@
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="showPreview()"><span id="preview-btn-text">👁 Önizleme</span></button>
-      <button class="btn btn-primary" onclick="saveSettings()"><span id="save-btn-text">💾 Kaydet</span></button>
+      <button class="btn btn-secondary" onclick="showPreview()"><span id="preview-btn-text" data-i18n="preview">👁 Önizleme</span></button>
+      <button class="btn btn-primary" onclick="saveSettings()"><span id="save-btn-text" data-i18n="save_btn">💾 Kaydet</span></button>
     </div>
 
     <!-- Önizleme sonucu -->
@@ -566,7 +578,7 @@
 
     <!-- USD bekleyen yeni ürünler -->
     <div class="panel" id="pending-panel" style="display:none;border-color:rgba(242,196,74,0.25)">
-      <div class="panel-title" style="color:var(--accent3)">⏳ Dolar Fiyatı Bekleyen Yeni Ürünler</div>
+      <div class="panel-title" style="color:var(--accent3)" data-i18n="pending_title">⏳ Dolar Fiyatı Bekleyen Yeni Ürünler</div>
       <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px">Mağazanıza yeni eklenen bu ürünlere dolar fiyatı girin, otomatik olarak TL'ye çevrilsin</div>
       <div style="overflow-x:auto">
         <table class="product-table">
@@ -577,7 +589,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Koleksiyon Filtresi</div>
+      <div class="panel-title" data-i18n="collection_filter">Koleksiyon Filtresi</div>
       <div class="collection-grid" id="collection-grid">
         <div class="loading-wrap" style="padding:15px"><div class="loading-spinner"></div></div>
       </div>
@@ -586,17 +598,37 @@
     <div class="panel">
       <div class="products-toolbar">
         <div>
-          <div class="panel-title" style="margin-bottom:4px">Ürün Fiyat Yönetimi</div>
+          <div class="panel-title" style="margin-bottom:4px" data-i18n="products_title">Ürün Fiyat Yönetimi</div>
           <div class="product-count" id="product-count">—</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div class="search-box">
             <span style="color:var(--text3);font-size:13px">🔍</span>
-            <input type="text" id="search-input" placeholder="Ürün ara..." oninput="filterProducts()"/>
+            <input type="text" id="search-input" data-i18n-ph="search_placeholder" placeholder="Ürün ara..." oninput="applyProductView()"/>
           </div>
-          <button class="btn btn-secondary" style="padding:8px 14px;font-size:12px" onclick="loadProducts()">↻</button>
-          <button class="btn btn-sync" style="padding:8px 14px;font-size:12px" onclick="syncCollection()"><span id="col-sync-text">🔄 Bu Koleksiyonu Güncelle</span></button>
-          <button class="btn btn-primary" style="padding:8px 14px;font-size:12px" onclick="saveAllPrices()"><span id="bulk-save-text">💾 Tümünü Kaydet</span></button>
+          <button class="btn btn-secondary" style="padding:8px 14px;font-size:12px" onclick="loadProducts()" title="Yenile">↻</button>
+          <button class="btn btn-sync" style="padding:8px 14px;font-size:12px" onclick="syncCollection()"><span id="col-sync-text" data-i18n="sync_collection">🔄 Bu Koleksiyonu Güncelle</span></button>
+          <button class="btn btn-primary" style="padding:8px 14px;font-size:12px" onclick="saveAllPrices()"><span id="bulk-save-text" data-i18n="save_all">💾 Tümünü Kaydet</span></button>
+        </div>
+      </div>
+
+      <!-- Filtre + Sıralama çubuğu -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="filter-chips" style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="filter-chip active" data-filter="all" onclick="setProductFilter('all',this)" data-i18n="filter_all">Tümü</button>
+          <button class="filter-chip" data-filter="unpriced" onclick="setProductFilter('unpriced',this)" data-i18n="filter_unpriced">Henüz fiyatlanmamış</button>
+          <button class="filter-chip" data-filter="priced" onclick="setProductFilter('priced',this)" data-i18n="filter_priced">Fiyatlanmış</button>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;font-family:var(--mono);color:var(--text3)" data-i18n="sort_label">Sırala:</span>
+          <select class="pair-select" id="sort-select" style="font-size:12px;padding:6px 10px" onchange="applyProductView()">
+            <option value="title_asc" data-i18n="sort_title_az">İsim A→Z</option>
+            <option value="title_desc" data-i18n="sort_title_za">İsim Z→A</option>
+            <option value="price_asc" data-i18n="sort_price_low">Fiyat (artan)</option>
+            <option value="price_desc" data-i18n="sort_price_high">Fiyat (azalan)</option>
+            <option value="unpriced_first" data-i18n="sort_unpriced">Fiyatsızlar önce</option>
+          </select>
         </div>
       </div>
 
@@ -620,8 +652,8 @@
       </div>
       <div id="products-empty" style="display:none;text-align:center;padding:48px 24px">
         <div style="font-size:42px;margin-bottom:14px">📦</div>
-        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Henüz ürün yok</div>
-        <div style="font-size:12px;color:var(--text3);font-family:var(--mono);max-width:320px;margin:0 auto;line-height:1.6">Bu koleksiyonda ürün bulunamadı. Shopify mağazanıza ürün ekleyince burada görünecek.</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="no_products_title">Henüz ürün yok</div>
+        <div style="font-size:12px;color:var(--text3);font-family:var(--mono);max-width:320px;margin:0 auto;line-height:1.6" data-i18n="no_products_desc">Bu koleksiyonda ürün bulunamadı. Shopify mağazanıza ürün ekleyince burada görünecek.</div>
       </div>
     </div>
   </div>
@@ -632,6 +664,133 @@
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const SHOP = urlParams.get('shop') || 'karinca-digital.myshopify.com';
+
+// ── ÇOKLU DİL (i18n) ──
+const I18N = {
+  tr: {
+    connected: "Bağlı",
+    tab_home: "🏠 Ana Sayfa", tab_products: "📦 Ürünler", tab_settings: "⚙️ Ayarlar",
+    products_title: "Ürün Fiyat Yönetimi", products_unit: "ürün", loading: "Yükleniyor...",
+    search_placeholder: "Ürün ara...",
+    sync_collection: "🔄 Bu Koleksiyonu Güncelle", save_all: "💾 Tümünü Kaydet", save: "Kaydet",
+    filter_all: "Tümü", filter_unpriced: "Henüz fiyatlanmamış", filter_priced: "Fiyatlanmış",
+    sort_label: "Sırala:", sort_title_az: "İsim A→Z", sort_title_za: "İsim Z→A",
+    sort_price_low: "Fiyat (artan)", sort_price_high: "Fiyat (azalan)", sort_unpriced: "Fiyatsızlar önce",
+    all_priced_title: "Hepsi fiyatlanmış!", all_priced_desc: "Bu görünümde fiyatlanmamış ürün yok.",
+    update_all: "🔄 Tüm Fiyatları Şimdi Güncelle",
+    dash_total_product: "Toplam Ürün", dash_active: "mağazada aktif",
+    dash_last_update: "Son Güncelleme", dash_not_yet: "henüz güncellenmedi",
+    dash_auto: "Otomatik Güncelleme",
+    current_rates: "Güncel Kurlar", live_rate: "Canlı kur · ExchangeRate-API",
+    total_updates: "Toplam Güncelleme", updates_done: "ürün fiyatı değiştirildi",
+    sync_count: "İşlem Sayısı", total_syncs: "toplam güncelleme",
+    daily_7: "Son 7 Gün — Günlük Güncelleme", rate_trend: "Kur Trendi",
+    recent_actions: "Son İşlemler", rollback: "↩ Son Güncellemeyi Geri Al",
+    no_actions: "Henüz işlem yok",
+    detail_history: "Detaylı geçmiş ve kayıtlar",
+    top_products: "En Çok Güncellenen Ürünler", price_history: "Fiyat Değişim Geçmişi",
+    live_log: "Canlı Kayıt",
+    currency: "Para Birimi",
+    currency_hint: "Ürünlerinizi hangi para biriminde aldığınızı ve müşterilere hangi para biriminde göstereceğinizi seçin.",
+    base_label: "Ana para birimi (ürünlerinizin alış birimi)",
+    target_label: "Hedef para birimi (müşterinin gördüğü)",
+    target_hint: "Her hedefe isterseniz kâr marjı ekleyin (kur dalgalanmasına karşı tampon).",
+    add_target: "+ Hedef Para Birimi Ekle",
+    auto_update: "Otomatik Güncelleme",
+    auto_daily: "Her gün otomatik güncelle",
+    auto_daily_hint: "Belirlediğiniz saatlerde fiyatlar güncel kura göre otomatik yenilenir",
+    add_time: "+ Saat Ekle",
+    advanced: "Gelişmiş ayarlar", advanced_hint: "— yuvarlama, fiyat koruma, yeni ürünler",
+    rounding: "Fiyat Yuvarlama", rounding_hint: "Çevrilen fiyatları daha düzgün göstermek için yuvarlayın.",
+    min_price: "Minimum Fiyat Koruması", min_price_unit: "₺ alt sınır", min_price_hint: "Fiyat bu değerin altına inmez",
+    threshold: "Kur Değişim Eşiği", threshold_unit: "% eşik", threshold_hint: "Bu orandan az değişimde güncelleme atlanır",
+    new_products: "Yeni Ürünler", track_new: "Yeni ürünleri takip et",
+    track_new_hint: "Mağazaya yeni ürün eklenince 'dolar fiyatı bekleyenler' listesine alınır",
+    preview: "👁 Önizleme", save_btn: "💾 Kaydet",
+    pending_title: "⏳ Dolar Fiyatı Bekleyen Yeni Ürünler",
+    pending_hint: "Mağazanıza yeni eklenen bu ürünlere dolar fiyatı girin, otomatik olarak TL'ye çevrilsin",
+    collection_filter: "Koleksiyon Filtresi",
+    no_products_title: "Henüz ürün yok",
+    no_products_desc: "Bu koleksiyonda ürün bulunamadı. Shopify mağazanıza ürün ekleyince burada görünecek.",
+    price_now: "Fiyatla",
+  },
+  en: {
+    connected: "Connected",
+    tab_home: "🏠 Home", tab_products: "📦 Products", tab_settings: "⚙️ Settings",
+    products_title: "Product Price Management", products_unit: "products", loading: "Loading...",
+    search_placeholder: "Search products...",
+    sync_collection: "🔄 Update This Collection", save_all: "💾 Save All", save: "Save",
+    filter_all: "All", filter_unpriced: "Not priced yet", filter_priced: "Priced",
+    sort_label: "Sort:", sort_title_az: "Name A→Z", sort_title_za: "Name Z→A",
+    sort_price_low: "Price (low→high)", sort_price_high: "Price (high→low)", sort_unpriced: "Unpriced first",
+    all_priced_title: "All priced!", all_priced_desc: "No unpriced products in this view.",
+    update_all: "🔄 Update All Prices Now",
+    dash_total_product: "Total Products", dash_active: "active in store",
+    dash_last_update: "Last Update", dash_not_yet: "not updated yet",
+    dash_auto: "Auto Update",
+    current_rates: "Current Rates", live_rate: "Live rate · ExchangeRate-API",
+    total_updates: "Total Updates", updates_done: "product prices changed",
+    sync_count: "Update Count", total_syncs: "total updates",
+    daily_7: "Last 7 Days — Daily Updates", rate_trend: "Rate Trend",
+    recent_actions: "Recent Activity", rollback: "↩ Undo Last Update",
+    no_actions: "No activity yet",
+    detail_history: "Detailed history and logs",
+    top_products: "Most Updated Products", price_history: "Price Change History",
+    live_log: "Live Log",
+    currency: "Currency",
+    currency_hint: "Choose the currency you buy your products in and the currency shown to customers.",
+    base_label: "Base currency (your purchase currency)",
+    target_label: "Target currency (what customers see)",
+    target_hint: "Optionally add a profit margin to each target (buffer against rate swings).",
+    add_target: "+ Add Target Currency",
+    auto_update: "Auto Update",
+    auto_daily: "Update automatically every day",
+    auto_daily_hint: "Prices refresh automatically at your chosen times based on the live rate",
+    add_time: "+ Add Time",
+    advanced: "Advanced settings", advanced_hint: "— rounding, price protection, new products",
+    rounding: "Price Rounding", rounding_hint: "Round converted prices for a cleaner look.",
+    min_price: "Minimum Price Protection", min_price_unit: "₺ floor", min_price_hint: "Price never goes below this value",
+    threshold: "Rate Change Threshold", threshold_unit: "% threshold", threshold_hint: "Updates are skipped if change is below this rate",
+    new_products: "New Products", track_new: "Track new products",
+    track_new_hint: "New products added to the store go to the 'awaiting USD price' list",
+    preview: "👁 Preview", save_btn: "💾 Save",
+    pending_title: "⏳ New Products Awaiting USD Price",
+    pending_hint: "Enter a USD price for these newly added products; they'll be converted to TRY automatically",
+    collection_filter: "Collection Filter",
+    no_products_title: "No products yet",
+    no_products_desc: "No products found in this collection. They'll appear here once you add products to your Shopify store.",
+    price_now: "Set Price",
+  }
+};
+
+let currentLang = 'tr';
+
+function t(key) {
+  return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.tr[key]) || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  applyLang();
+}
+
+function applyLang() {
+  // data-i18n olan tüm elementleri çevir
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+  // placeholder çevirileri
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    const val = t(key);
+    if (val) el.setAttribute('placeholder', val);
+  });
+  // Dinamik içerikleri yeniden çiz
+  if (allProducts.length > 0) applyProductView();
+}
 
 const CURRENCIES = [];
 let allProducts = [];
@@ -653,6 +812,7 @@ async function init() {
     addLog('Bağlantı hatası: ' + e.message, 'err');
   }
   setupTabs();
+  applyLang();
   checkFirstVisit();
   loadPending();
 }
@@ -1266,7 +1426,7 @@ async function loadProducts() {
   document.getElementById('products-loading').style.display = 'flex';
   document.getElementById('products-table-wrap').style.display = 'none';
   document.getElementById('products-empty').style.display = 'none';
-  document.getElementById('product-count').textContent = 'Yükleniyor...';
+  document.getElementById('product-count').textContent = t('loading');
 
   try {
     const url = selectedCollection && selectedCollection !== 'all'
@@ -1277,8 +1437,7 @@ async function loadProducts() {
     if (data.error) throw new Error(data.error);
 
     allProducts = data.products || [];
-    document.getElementById('product-count').textContent = `${data.total} ürün`;
-    renderProducts(allProducts);
+    applyProductView();
     addLog(`${data.total} ürün yüklendi`, 'ok');
   } catch(e) {
     addLog('Ürün yükleme hatası: ' + e.message, 'err');
@@ -1288,10 +1447,80 @@ async function loadProducts() {
   }
 }
 
+let productFilter = 'all';
+
+function setProductFilter(filter, el) {
+  productFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  applyProductView();
+}
+
+// Ham veriyi al, filtre + sıralama + arama uygula, sonra çiz
+function applyProductView() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  const sortBy = document.getElementById('sort-select')?.value || 'title_asc';
+
+  // Ürünleri kopyala
+  let items = allProducts.map(p => ({ ...p }));
+
+  // Arama filtresi (ürün ismi)
+  if (q) items = items.filter(p => p.title.toLowerCase().includes(q));
+
+  // Fiyatlanmış/fiyatlanmamış filtresi
+  // Bir ürün "fiyatlanmış" sayılır eğer en az bir varyantında usdPrice > 0 varsa
+  function isPriced(p) {
+    return p.variants.some(v => parseFloat(v.usdPrice) > 0);
+  }
+  if (productFilter === 'unpriced') items = items.filter(p => !isPriced(p));
+  else if (productFilter === 'priced') items = items.filter(p => isPriced(p));
+
+  // Sıralama
+  function firstUsd(p) {
+    const v = p.variants.find(v => parseFloat(v.usdPrice) > 0);
+    return v ? parseFloat(v.usdPrice) : 0;
+  }
+  items.sort((a, b) => {
+    switch(sortBy) {
+      case 'title_desc': return b.title.localeCompare(a.title, 'tr');
+      case 'price_asc': return firstUsd(a) - firstUsd(b);
+      case 'price_desc': return firstUsd(b) - firstUsd(a);
+      case 'unpriced_first': return (isPriced(a)?1:0) - (isPriced(b)?1:0);
+      default: return a.title.localeCompare(b.title, 'tr'); // title_asc
+    }
+  });
+
+  renderProducts(items);
+
+  // Sayaç güncelle
+  const countEl = document.getElementById('product-count');
+  if (countEl) {
+    const total = allProducts.length;
+    const shown = items.length;
+    countEl.textContent = shown === total ? `${total} ${t('products_unit')}` : `${shown} / ${total} ${t('products_unit')}`;
+  }
+}
+
 function renderProducts(products) {
   document.getElementById('products-loading').style.display = 'none';
-  if (products.length === 0) { document.getElementById('products-empty').style.display = 'block'; return; }
-  document.getElementById('products-table-wrap').style.display = 'block';
+  const tableWrap = document.getElementById('products-table-wrap');
+  const empty = document.getElementById('products-empty');
+
+  if (products.length === 0) {
+    tableWrap.style.display = 'none';
+    empty.style.display = 'block';
+    // Filtre sonucu boşsa farklı mesaj
+    const emptyTitle = empty.querySelector('div:nth-child(2)');
+    const emptyDesc = empty.querySelector('div:nth-child(3)');
+    if (productFilter === 'unpriced' && allProducts.length > 0) {
+      empty.querySelector('div:first-child').textContent = '✅';
+      if (emptyTitle) emptyTitle.textContent = t('all_priced_title');
+      if (emptyDesc) emptyDesc.textContent = t('all_priced_desc');
+    }
+    return;
+  }
+  empty.style.display = 'none';
+  tableWrap.style.display = 'block';
 
   const firstRate = Object.values(currentRates)[0] || null;
   const tbody = document.getElementById('products-tbody');
@@ -1303,12 +1532,14 @@ function renderProducts(products) {
       const tr = document.createElement('tr');
       tr.className = 'product-row';
       tr.dataset.productTitle = product.title.toLowerCase();
+      const unpricedDot = (vIdx === 0 && !product.variants.some(v => parseFloat(v.usdPrice) > 0))
+        ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent3);margin-left:6px" title="Fiyatlanmamış"></span>' : '';
       tr.innerHTML = `
         <td>${vIdx === 0
           ? (product.image ? `<img class="product-thumb" src="${product.image}" alt=""/>` : `<div class="product-thumb-placeholder">📦</div>`)
           : ''}</td>
         <td>
-          ${vIdx === 0 ? `<div class="product-title-text">${product.title}</div>` : ''}
+          ${vIdx === 0 ? `<div class="product-title-text">${product.title}${unpricedDot}</div>` : ''}
           ${product.variants.length > 1 ? `<div class="product-variant-text">${variant.title}</div>` : ''}
         </td>
         <td>
@@ -1321,7 +1552,7 @@ function renderProducts(products) {
         <td><span class="try-preview" id="preview-${variant.id}">
           ${firstRate && usdVal ? '₺'+(usdVal*firstRate).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}
         </span></td>
-        <td><button class="save-btn" id="savebtn-${variant.id}" onclick="saveVariantPrice('${variant.id}',this)">Kaydet</button></td>
+        <td><button class="save-btn" id="savebtn-${variant.id}" onclick="saveVariantPrice('${variant.id}',this)">${t('save')}</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -1412,12 +1643,7 @@ async function syncCollection() {
   finally { btn.textContent = '🔄 Bu Koleksiyonu Güncelle'; document.querySelector('[onclick="syncCollection()"]').disabled = false; }
 }
 
-function filterProducts() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  document.querySelectorAll('.product-row').forEach(row => {
-    row.style.display = row.dataset.productTitle?.includes(q) ? '' : 'none';
-  });
-}
+// filterProducts → applyProductView ile değiştirildi
 
 async function upgradeToPremium() {
   const btn = document.getElementById('upgrade-btn');
