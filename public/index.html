@@ -178,6 +178,7 @@
     <div class="tab active" data-tab="dashboard">📊 Dashboard</div>
     <div class="tab" data-tab="settings">⚙️ Kurlar</div>
     <div class="tab" data-tab="products">📦 Ürünler</div>
+    <div class="tab" data-tab="history">📜 Geçmiş</div>
   </div>
 
   <!-- DASHBOARD TAB -->
@@ -253,22 +254,97 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Zamanlama</div>
-      <div class="schedule-row">
-        <div class="toggle-row">
-          <div class="toggle on" id="auto-toggle" onclick="toggleAuto()"><div class="toggle-knob"></div></div>
-          <span>Otomatik güncelleme</span>
+      <div class="panel-title">Fiyatlandırma Kuralları</div>
+
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Yuvarlama</label>
+        <select class="pair-select" id="rounding-select" style="width:100%;max-width:340px">
+          <option value="none">Yuvarlama yok (₺302,47)</option>
+          <option value="up_99">,99 ile bitir (₺302,99)</option>
+          <option value="up_95">,95 ile bitir (₺302,95)</option>
+          <option value="nearest_int">En yakın tam sayı (₺302)</option>
+          <option value="up_int">Yukarı tam sayı (₺303)</option>
+          <option value="nearest_5">En yakın 5'e (₺300)</option>
+          <option value="nearest_10">En yakın 10'a (₺300)</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div>
+          <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Minimum Fiyat Koruması (TRY)</label>
+          <div class="pair-margin" style="width:160px">
+            <input type="number" id="min-price-input" value="0" min="0" step="1" placeholder="0" style="width:120px"/>
+            <span>₺ alt sınır</span>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Fiyat bu değerin altına inmez</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">Her gün saat</span>
-          <input type="time" class="schedule-input" id="schedule-time" value="09:00"/>
-          <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">'de güncelle</span>
+
+        <div>
+          <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Kur Değişim Eşiği</label>
+          <div class="pair-margin" style="width:160px">
+            <input type="number" id="threshold-input" value="0" min="0" max="20" step="0.1" placeholder="0" style="width:120px"/>
+            <span>% eşik</span>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Bu orandan az değişimde güncelleme yapılmaz</div>
         </div>
       </div>
     </div>
 
+    <div class="panel">
+      <div class="panel-title">Zamanlama</div>
+      <div class="toggle-row" style="margin-bottom:16px">
+        <div class="toggle on" id="auto-toggle" onclick="toggleAuto()"><div class="toggle-knob"></div></div>
+        <span>Otomatik güncelleme</span>
+      </div>
+      <div id="schedule-times-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <button class="add-pair-btn" onclick="addScheduleTime()" style="max-width:240px">+ Saat Ekle</button>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">Belirlenen saatlerde her gün otomatik güncellenir</div>
+    </div>
+
     <div class="btn-row">
+      <button class="btn btn-secondary" onclick="showPreview()"><span id="preview-btn-text">👁 Önizleme</span></button>
       <button class="btn btn-primary" onclick="saveSettings()"><span id="save-btn-text">💾 Kaydet & Senkronize Et</span></button>
+    </div>
+
+    <!-- Önizleme sonucu -->
+    <div id="preview-panel" class="panel" style="display:none">
+      <div class="panel-title">Önizleme — <span id="preview-count" style="color:var(--accent2)"></span></div>
+      <div style="overflow-x:auto">
+        <table class="product-table">
+          <thead><tr><th>Ürün</th><th>Eski Fiyat</th><th>Yeni Fiyat</th></tr></thead>
+          <tbody id="preview-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" style="display:none">
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div class="panel-title" style="margin-bottom:0">Son Güncelleme — Geri Al</div>
+        <button class="btn btn-secondary" style="padding:9px 16px;font-size:12px;flex:none" onclick="rollbackLast()">
+          <span id="rollback-btn-text">↩ Son Güncellemeyi Geri Al</span>
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">Son toplu güncellemedeki tüm fiyatları eski haline döndürür</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">İşlem Kayıtları</div>
+      <div id="activity-list" style="display:flex;flex-direction:column;gap:8px">
+        <div class="loading-wrap" style="padding:20px"><div class="loading-spinner"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Fiyat Değişim Geçmişi</div>
+      <div style="overflow-x:auto">
+        <table class="product-table">
+          <thead><tr><th>Ürün</th><th>Eski</th><th>Yeni</th><th>USD</th><th>Tarih</th></tr></thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -350,12 +426,16 @@ async function init() {
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
-  ['dashboard','settings','products'].forEach(t => {
+  ['dashboard','settings','products','history'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'products' && allProducts.length === 0) {
     loadCollections();
     loadProducts();
+  }
+  if (tab === 'history') {
+    loadHistory();
+    loadActivity();
   }
 }
 
@@ -452,15 +532,55 @@ async function loadSettings() {
     if (s.targets) targets = s.targets;
 
     autoUpdateOn = s.autoUpdate !== false;
-    document.getElementById('schedule-time').value = s.scheduleTime || '09:00';
     document.getElementById('auto-toggle').classList.toggle('on', autoUpdateOn);
 
-    // currencyPairs uyumluluğu için
+    // Yeni ayarlar
+    if (document.getElementById('rounding-select')) document.getElementById('rounding-select').value = s.rounding || 'none';
+    if (document.getElementById('min-price-input')) document.getElementById('min-price-input').value = s.minPrice || 0;
+    if (document.getElementById('threshold-input')) document.getElementById('threshold-input').value = s.rateThreshold || 0;
+
+    scheduleTimes = (s.scheduleTimes && s.scheduleTimes.length > 0) ? s.scheduleTimes : [s.scheduleTime || '09:00'];
+
     currencyPairs = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin }));
 
     renderBaseSelect();
     renderTargets();
+    renderScheduleTimes();
   } catch(e) {}
+}
+
+let scheduleTimes = ['09:00'];
+
+function renderScheduleTimes() {
+  const list = document.getElementById('schedule-times-list');
+  if (!list) return;
+  list.innerHTML = '';
+  scheduleTimes.forEach((time, i) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '10px';
+    row.innerHTML = `
+      <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">Her gün</span>
+      <input type="time" class="schedule-input" value="${time}" onchange="updateScheduleTime(${i}, this.value)"/>
+      ${scheduleTimes.length > 1 ? `<button class="pair-remove" onclick="removeScheduleTime(${i})">✕</button>` : ''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addScheduleTime() {
+  scheduleTimes.push('18:00');
+  renderScheduleTimes();
+}
+
+function removeScheduleTime(i) {
+  scheduleTimes.splice(i, 1);
+  renderScheduleTimes();
+}
+
+function updateScheduleTime(i, val) {
+  scheduleTimes[i] = val;
 }
 
 function renderBaseSelect() {
@@ -549,7 +669,11 @@ async function saveSettings() {
         targets,
         currencies: currencyPairs,
         autoUpdate: autoUpdateOn,
-        scheduleTime: document.getElementById('schedule-time').value,
+        scheduleTimes,
+        scheduleTime: scheduleTimes[0],
+        rounding: document.getElementById('rounding-select')?.value || 'none',
+        minPrice: parseFloat(document.getElementById('min-price-input')?.value) || 0,
+        rateThreshold: parseFloat(document.getElementById('threshold-input')?.value) || 0,
       })
     });
     addLog(`Ayarlar kaydedildi: ${baseCurrency} → ${targets.map(t=>t.code).join(', ')} (${targets.length} hedef)`, 'ok');
@@ -797,6 +921,138 @@ async function upgradeToPremium() {
     showToast('✗ ' + e.message, 'error');
     btn.textContent = "⭐ Premium'a Geç — $4.99/ay";
     btn.disabled = false;
+  }
+}
+
+// ── ÖNİZLEME ──
+async function showPreview() {
+  const btn = document.getElementById('preview-btn-text');
+  btn.innerHTML = '<span class="btn-spinner"></span> Hesaplanıyor...';
+
+  // Önce ayarları kaydet ki önizleme güncel kurallarla çalışsın
+  try {
+    await fetch('/api/settings', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        shop: SHOP, baseCurrency, targets, currencies: currencyPairs,
+        autoUpdate: autoUpdateOn, scheduleTimes, scheduleTime: scheduleTimes[0],
+        rounding: document.getElementById('rounding-select')?.value || 'none',
+        minPrice: parseFloat(document.getElementById('min-price-input')?.value) || 0,
+        rateThreshold: parseFloat(document.getElementById('threshold-input')?.value) || 0,
+      })
+    });
+
+    const res = await fetch('/api/preview', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ shop: SHOP })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    document.getElementById('preview-panel').style.display = 'block';
+    document.getElementById('preview-count').textContent =
+      `${data.totalVariants} ürün etkilenecek (ilk ${data.preview.length} gösteriliyor)`;
+
+    const tbody = document.getElementById('preview-tbody');
+    tbody.innerHTML = '';
+    data.preview.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.className = 'product-row';
+      tr.innerHTML = `
+        <td><div class="product-title-text">${p.productTitle}</div>
+          <div class="product-variant-text">$${p.usdPrice}</div></td>
+        <td><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">₺${parseFloat(p.oldPrice).toLocaleString('tr-TR')}</span></td>
+        <td><span style="font-family:var(--mono);font-size:13px;color:var(--accent2)">₺${parseFloat(p.newPrice).toLocaleString('tr-TR')}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    showToast('✗ Önizleme hatası: ' + e.message, 'error');
+  } finally {
+    btn.textContent = '👁 Önizleme';
+  }
+}
+
+// ── GEÇMİŞ ──
+async function loadHistory() {
+  try {
+    const res = await fetch(`/api/history?shop=${SHOP}`);
+    const data = await res.json();
+    const tbody = document.getElementById('history-tbody');
+    tbody.innerHTML = '';
+    if (!data.history || data.history.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);font-family:var(--mono);font-size:12px">Henüz kayıt yok</td></tr>';
+      return;
+    }
+    data.history.forEach(h => {
+      const tr = document.createElement('tr');
+      tr.className = 'product-row';
+      const date = new Date(h.created_at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      tr.innerHTML = `
+        <td><div class="product-title-text" style="font-size:12px">${h.product_title || '—'}</div></td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${h.old_price ? '₺'+parseFloat(h.old_price).toLocaleString('tr-TR') : '—'}</span></td>
+        <td><span style="font-family:var(--mono);font-size:12px;color:var(--accent2)">₺${parseFloat(h.new_price).toLocaleString('tr-TR')}</span></td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">$${parseFloat(h.usd_price).toFixed(2)}</span></td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${date}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch(e) {
+    addLog('Geçmiş yüklenemedi: ' + e.message, 'err');
+  }
+}
+
+async function loadActivity() {
+  try {
+    const res = await fetch(`/api/activity?shop=${SHOP}`);
+    const data = await res.json();
+    const list = document.getElementById('activity-list');
+    list.innerHTML = '';
+    if (!data.activity || data.activity.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">Henüz işlem yok</div>';
+      return;
+    }
+    data.activity.forEach(a => {
+      const date = new Date(a.created_at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px';
+      row.innerHTML = `
+        <div>
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text)">${a.detail || a.action}</div>
+          <div style="font-size:10px;font-family:var(--mono);color:var(--text3);margin-top:2px">${date}</div>
+        </div>
+        <div style="font-size:12px;font-family:var(--mono);color:var(--accent2)">${a.product_count} ürün</div>
+      `;
+      list.appendChild(row);
+    });
+  } catch(e) {}
+}
+
+// ── GERİ ALMA ──
+async function rollbackLast() {
+  if (!confirm('Son güncellemedeki tüm fiyatlar eski haline döndürülecek. Emin misiniz?')) return;
+
+  const btn = document.getElementById('rollback-btn-text');
+  btn.innerHTML = '<span class="btn-spinner"></span> Geri alınıyor...';
+  document.querySelector('[onclick="rollbackLast()"]').disabled = true;
+
+  try {
+    const res = await fetch('/api/rollback', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ shop: SHOP })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✓ ${data.restored} ürün geri alındı`, 'success');
+      loadHistory();
+      loadActivity();
+    } else throw new Error(data.error);
+  } catch(e) {
+    showToast('✗ ' + e.message, 'error');
+  } finally {
+    btn.textContent = '↩ Son Güncellemeyi Geri Al';
+    document.querySelector('[onclick="rollbackLast()"]').disabled = false;
   }
 }
 

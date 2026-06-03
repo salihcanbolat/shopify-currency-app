@@ -1,8 +1,9 @@
 import express from "express";
 import { getExchangeRate } from "./rateService.js";
-import { updateAllProductPrices, updateCollectionPrices } from "./priceUpdater.js";
+import { updateAllProductPrices, updateCollectionPrices, previewPrices, rollbackPrices } from "./priceUpdater.js";
 import { isPremium, getProductLimit } from "./billing.js";
-import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription } from "./db.js";
+import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription,
+         getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch } from "./db.js";
 
 export const apiRouter = express.Router();
 
@@ -45,10 +46,10 @@ apiRouter.get("/settings", async (req, res) => {
 
 // POST /api/settings
 apiRouter.post("/settings", async (req, res) => {
-  const { shop, currencies, baseCurrency, targets, autoUpdate, scheduleTime } = req.body;
+  const { shop, currencies, baseCurrency, targets, autoUpdate,
+          scheduleTime, scheduleTimes, rounding, minPrice, rateThreshold } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  // Yeni format: baseCurrency + targets[] → currencies[] formatına çevir
   let currencyList = currencies || [];
   if (baseCurrency && targets && targets.length > 0) {
     currencyList = targets.map(t => ({ base: baseCurrency, target: t.code, margin: t.margin || 0 }));
@@ -59,16 +60,24 @@ apiRouter.post("/settings", async (req, res) => {
     try {
       const rate = await getExchangeRate(c.base, c.target);
       rates[`${c.base}_${c.target}`] = rate;
-    } catch(e) { console.error(`Rate fetch error ${c.base}→${c.target}:`, e.message); }
+    } catch(e) { console.error(`Rate fetch error:`, e.message); }
   }
 
+  // Mevcut ayarlari koru (lastRates gibi)
+  const existing = await getSettings(shop) || {};
+
   const settings = {
+    ...existing,
     currencies: currencyList,
     baseCurrency: baseCurrency || currencyList[0]?.base || "USD",
     targets: targets || currencyList.map(c => ({ code: c.target, margin: c.margin || 0 })),
     autoUpdate: !!autoUpdate,
     scheduleTime: scheduleTime || "09:00",
-    lastUpdated: new Date().toISOString(),
+    scheduleTimes: scheduleTimes || (scheduleTime ? [scheduleTime] : ["09:00"]),
+    rounding: rounding || "none",
+    minPrice: parseFloat(minPrice) || 0,
+    rateThreshold: parseFloat(rateThreshold) || 0,
+    lastUpdated: existing.lastUpdated || null,
     rates,
   };
 
@@ -224,28 +233,121 @@ apiRouter.post("/sync", async (req, res) => {
 
   try {
     let totalUpdated = 0;
+    let lastBatchId = null;
     const productLimit = getProductLimit(shop);
-    const premium = isPremium(shop);
+
+    const rounding = settings.rounding || "none";
+    const minPrice = parseFloat(settings.minPrice) || 0;
+    const threshold = parseFloat(settings.rateThreshold) || 0; // % eşik
 
     for (const currencyPair of (settings.currencies || [])) {
       const rate = await getExchangeRate(currencyPair.base, currencyPair.target);
       const effectiveRate = rate * (1 + (currencyPair.margin || 0) / 100);
-      console.log(`Sync: ${currencyPair.base}→${currencyPair.target}, kur: ${effectiveRate}, limit: ${productLimit}, koleksiyon: ${collection_id || "all"}`);
+
+      // Kur değişim eşiği kontrolü
+      const lastRates = settings.lastRates || {};
+      const key = `${currencyPair.base}_${currencyPair.target}`;
+      const prevRate = lastRates[key];
+      if (threshold > 0 && prevRate) {
+        const changePct = Math.abs((effectiveRate - prevRate) / prevRate) * 100;
+        if (changePct < threshold) {
+          console.log(`⏩ ${key}: %${changePct.toFixed(2)} < %${threshold} esik, atlandı`);
+          continue;
+        }
+      }
+
+      console.log(`Sync: ${key}, kur: ${effectiveRate}, yuvarlama: ${rounding}, min: ${minPrice}`);
 
       const result = collection_id && collection_id !== "all"
-        ? await updateCollectionPrices(shop, token, effectiveRate, collection_id, productLimit)
-        : await updateAllProductPrices(shop, token, effectiveRate, productLimit);
+        ? await updateCollectionPrices(shop, token, effectiveRate, collection_id, productLimit, { rounding, minPrice })
+        : await updateAllProductPrices(shop, token, effectiveRate, productLimit, { rounding, minPrice });
 
       totalUpdated += result.updatedCount;
+      lastBatchId = result.batchId;
+
+      // Son kuru kaydet
+      if (!settings.lastRates) settings.lastRates = {};
+      settings.lastRates[key] = effectiveRate;
     }
 
     settings.lastUpdated = new Date().toISOString();
     await dbSaveSettings(shop, settings);
 
-    res.json({ success: true, updatedCount: totalUpdated });
+    res.json({ success: true, updatedCount: totalUpdated, batchId: lastBatchId });
   } catch (err) {
     console.error("Sync error:", err);
     res.status(500).json({ error: "Sync failed", details: err.message });
+  }
+});
+
+// POST /api/preview - degisiklik yapmadan onizleme
+apiRouter.post("/preview", async (req, res) => {
+  const { shop, collection_id } = req.body;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+
+  const token = await getToken(shop);
+  if (!token) return res.status(401).json({ error: "Shop not authenticated" });
+
+  const settings = await getSettings(shop);
+  if (!settings) return res.status(400).json({ error: "No settings configured" });
+
+  try {
+    const pair = (settings.currencies || [])[0] || { base: "USD", target: "TRY", margin: 0 };
+    const rate = await getExchangeRate(pair.base, pair.target);
+    const effectiveRate = rate * (1 + (pair.margin || 0) / 100);
+    const rounding = settings.rounding || "none";
+    const minPrice = parseFloat(settings.minPrice) || 0;
+
+    const result = await previewPrices(shop, token,
+      effectiveRate,
+      collection_id && collection_id !== "all" ? collection_id : null,
+      { rounding, minPrice, limit: 20 });
+
+    res.json({ success: true, ...result, effectiveRate, rounding, minPrice });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/history - fiyat degisim gecmisi
+apiRouter.get("/history", async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+  const history = await getPriceHistory(shop, 100);
+  res.json({ history });
+});
+
+// GET /api/activity - islem logu
+apiRouter.get("/activity", async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+  const activity = await getActivityLog(shop, 50);
+  res.json({ activity });
+});
+
+// POST /api/rollback - son guncellemeyi geri al
+apiRouter.post("/rollback", async (req, res) => {
+  const { shop, batch_id } = req.body;
+  if (!shop) return res.status(400).json({ error: "Missing shop" });
+
+  const token = await getToken(shop);
+  if (!token) return res.status(401).json({ error: "Shop not authenticated" });
+
+  try {
+    let batchId = batch_id;
+    if (!batchId) {
+      const last = await getLastBatch(shop);
+      if (!last) return res.status(400).json({ error: "Geri alınacak işlem yok" });
+      batchId = last.batch_id;
+    }
+
+    const rows = await getBatchForRollback(shop, batchId);
+    if (rows.length === 0) return res.status(400).json({ error: "Geri alınacak veri yok" });
+
+    const result = await rollbackPrices(shop, token, rows);
+    res.json({ success: true, restored: result.restored });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
