@@ -1,4 +1,6 @@
 name = "Otomatik Kur Hesaplayici"
+application_url = "https://shopify-currency-app-production.up.railway.app"
+embedded = true
 
 [access_scopes]
 scopes = "write_products,read_products,read_inventory"
@@ -22,6 +24,10 @@ uri = "/webhooks/customers/redact"
 [[webhooks.subscriptions]]
 topics = ["shop/redact"]
 uri = "/webhooks/shop/redact"
+
+[[webhooks.subscriptions]]
+topics = ["products/create"]
+uri = "/webhooks/products/create"
 
 [app_proxy]
 url = "https://shopify-currency-app-production.up.railway.app"

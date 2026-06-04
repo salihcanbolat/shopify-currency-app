@@ -20,6 +20,18 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Embedded app: Shopify admin iframe'inde çalışabilmek için CSP header
+app.use((req, res, next) => {
+  const shop = req.query.shop || "";
+  // Shopify, uygulamanın yalnızca ilgili mağaza admin'i içinde
+  // iframe'e gömülmesine izin verir
+  res.setHeader(
+    "Content-Security-Policy",
+    `frame-ancestors https://${shop} https://admin.shopify.com;`
+  );
+  next();
+});
+
 // index.html'i API key enjekte ederek serve et (statik servisten ÖNCE)
 const INDEX_PATH = path.join(__dirname, "../public/index.html");
 function serveIndex(req, res) {
@@ -34,6 +46,11 @@ function serveIndex(req, res) {
 }
 app.get("/", serveIndex);
 app.get("/index.html", serveIndex);
+
+// Gizlilik politikası (App Store zorunlu)
+app.get("/privacy", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/privacy.html"));
+});
 
 // Diğer statik dosyalar (varsa)
 app.use(express.static(path.join(__dirname, "../public")));
