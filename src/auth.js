@@ -20,7 +20,7 @@ shopifyAuth.get("/", (req, res) => {
 
   const state = crypto.randomBytes(16).toString("hex");
   const redirectUri = `${HOST}/auth/callback`;
-  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SCOPES}&state=${state}&redirect_uri=${redirectUri}`;
+  const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SCOPES}&state=${state}&redirect_uri=${redirectUri}&expiring=1`;
 
   res.redirect(installUrl);
 });
@@ -52,11 +52,13 @@ shopifyAuth.get("/callback", async (req, res) => {
       }),
     });
 
-    const { access_token } = await tokenResponse.json();
+    const tokenData = await tokenResponse.json();
+    const { access_token, refresh_token, expires_in } = tokenData;
     if (!access_token) throw new Error("Token alınamadı");
 
-    // Token'ı DB'ye kaydet
-    await saveToken(shop, access_token);
+    // Token'ı (varsa refresh_token + son kullanma ile) DB'ye kaydet
+    const expiresAt = expires_in ? Date.now() + expires_in * 1000 : null;
+    await saveToken(shop, access_token, refresh_token || null, expiresAt);
 
     // products/create webhook'unu otomatik kaydet
     try {

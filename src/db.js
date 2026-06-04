@@ -24,10 +24,15 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS shop_tokens (
         shop VARCHAR(255) PRIMARY KEY,
         token TEXT NOT NULL,
+        refresh_token TEXT,
+        expires_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Mevcut tablolara yeni kolonları ekle (eski kurulumlar için)
+    await db.query(`ALTER TABLE shop_tokens ADD COLUMN IF NOT EXISTS refresh_token TEXT`);
+    await db.query(`ALTER TABLE shop_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`);
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS shop_settings (
@@ -103,49 +108,117 @@ export async function initDb() {
 }
 
 // TOKEN İŞLEMLERİ
-export async function saveToken(shop, token) {
+// RAM cache artık obje tutar: { token, refreshToken, expiresAt(ms) }
+export async function saveToken(shop, token, refreshToken = null, expiresAt = null) {
   const db = getDb();
   await db.query(`
-    INSERT INTO shop_tokens (shop, token, updated_at)
-    VALUES ($1, $2, NOW())
-    ON CONFLICT (shop) DO UPDATE SET token = $2, updated_at = NOW()
-  `, [shop, token]);
+    INSERT INTO shop_tokens (shop, token, refresh_token, expires_at, updated_at)
+    VALUES ($1, $2, $3, $4, NOW())
+    ON CONFLICT (shop) DO UPDATE
+      SET token = $2,
+          refresh_token = COALESCE($3, shop_tokens.refresh_token),
+          expires_at = $4,
+          updated_at = NOW()
+  `, [shop, token, refreshToken, expiresAt ? new Date(expiresAt) : null]);
+
   if (!global.shopTokens) global.shopTokens = {};
-  global.shopTokens[shop] = token;
-  console.log(`✅ Token DB'ye kaydedildi: ${shop}`);
+  global.shopTokens[shop] = { token, refreshToken, expiresAt };
+  console.log(`✅ Token DB'ye kaydedildi: ${shop}${expiresAt ? ` (geçerlilik: ${new Date(expiresAt).toISOString()})` : ""}`);
+}
+
+const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
+const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
+
+// Refresh token ile yeni access token al (Shopify token rotasyonu)
+async function refreshAccessToken(shop, refreshToken) {
+  console.log(`🔄 Token yenileniyor: ${shop}`);
+  const resp = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: SHOPIFY_API_KEY,
+      client_secret: SHOPIFY_API_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`Token yenileme başarısız: ${JSON.stringify(data)}`);
+  }
+  // Shopify yeni access_token + (genelde) yeni refresh_token döner
+  const newExpiresAt = data.expires_in ? Date.now() + data.expires_in * 1000 : null;
+  const newRefresh = data.refresh_token || refreshToken; // dönmezse mevcudu koru
+  await saveToken(shop, data.access_token, newRefresh, newExpiresAt);
+  return data.access_token;
+}
+
+// Tek bir mağaza kaydını DB'den oku (RAM'de yoksa)
+async function loadTokenRow(shop) {
+  const db = getDb();
+  const result = await db.query(
+    "SELECT token, refresh_token, expires_at FROM shop_tokens WHERE shop = $1",
+    [shop]
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return {
+    token: row.token,
+    refreshToken: row.refresh_token || null,
+    expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : null,
+  };
 }
 
 export async function getToken(shop) {
-  // Önce RAM'den kontrol et
-  if (global.shopTokens?.[shop]) return global.shopTokens[shop];
+  if (!global.shopTokens) global.shopTokens = {};
 
-  // Env variable'dan kontrol et
-  const envKey = "SHOP_TOKEN_" + shop.replace(/[^a-zA-Z0-9]/g, "_");
-  if (process.env[envKey]) return process.env[envKey];
-
-  // DB'den oku
-  try {
-    const db = getDb();
-    const result = await db.query("SELECT token FROM shop_tokens WHERE shop = $1", [shop]);
-    if (result.rows.length > 0) {
-      const token = result.rows[0].token;
-      if (!global.shopTokens) global.shopTokens = {};
-      global.shopTokens[shop] = token;
-      return token;
+  // RAM'de yoksa DB'den yükle
+  let entry = global.shopTokens[shop];
+  if (!entry) {
+    try {
+      entry = await loadTokenRow(shop);
+      if (entry) global.shopTokens[shop] = entry;
+    } catch (e) {
+      console.error("Token DB okuma hatası:", e.message);
     }
-  } catch(e) {
-    console.error("Token DB okuma hatası:", e.message);
+  }
+  if (!entry || !entry.token) return null;
+
+  // Eski format (sadece string) güvenliği
+  if (typeof entry === "string") return entry;
+
+  // Süre dolmaya yakınsa (5 dk eşik) ve refresh varsa proaktif yenile
+  const FIVE_MIN = 5 * 60 * 1000;
+  const needsRefresh =
+    entry.expiresAt && Date.now() > entry.expiresAt - FIVE_MIN;
+
+  if (needsRefresh && entry.refreshToken) {
+    try {
+      return await refreshAccessToken(shop, entry.refreshToken);
+    } catch (e) {
+      console.error(`Token yenileme hatası (${shop}):`, e.message);
+      // Yenileme başarısızsa eldeki token'ı dön (belki hâlâ çalışır), yoksa null
+      return entry.token || null;
+    }
   }
 
-  return null;
+  return entry.token;
 }
 
 export async function loadAllTokens() {
   try {
     const db = getDb();
-    const result = await db.query("SELECT shop, token FROM shop_tokens");
+    const result = await db.query(
+      "SELECT shop, token, refresh_token, expires_at FROM shop_tokens"
+    );
     global.shopTokens = {};
-    result.rows.forEach(row => { global.shopTokens[row.shop] = row.token; });
+    result.rows.forEach(row => {
+      global.shopTokens[row.shop] = {
+        token: row.token,
+        refreshToken: row.refresh_token || null,
+        expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : null,
+      };
+    });
     console.log(`📦 ${result.rows.length} token DB'den yüklendi`);
   } catch(e) {
     console.error("Token yükleme hatası:", e.message);

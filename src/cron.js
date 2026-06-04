@@ -1,17 +1,18 @@
 import cron from "node-cron";
 import { getExchangeRate } from "./rateService.js";
 import { updateAllProductPrices } from "./priceUpdater.js";
+import { getToken } from "./db.js";
 
 export function scheduleCronJob() {
   cron.schedule("* * * * *", async () => {
     const allSettings = global.shopSettings || {};
-    const tokens = global.shopTokens || {};
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
     for (const [shop, settings] of Object.entries(allSettings)) {
       if (!settings.autoUpdate) continue;
-      const token = tokens[shop];
+      // getToken refresh'i de hallediyor (süresi dolmuşsa yeniler)
+      const token = await getToken(shop);
       if (!token) continue;
 
       // Çoklu zamanlama desteği — scheduleTimes dizisi veya tek scheduleTime
