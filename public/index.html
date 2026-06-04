@@ -574,6 +574,12 @@
         </table>
       </div>
     </div>
+
+    <div style="text-align:center;margin-top:18px">
+      <a href="#" onclick="showWizard();return false;"
+         style="font-size:12px;color:var(--text3);text-decoration:none"
+         data-i18n="replay_wizard">↻ Kurulum sihirbazını tekrar göster</a>
+    </div>
   </div>
 
   <!-- PRODUCTS TAB -->
@@ -694,6 +700,7 @@ async function apiFetch(url, options = {}) {
 const I18N = {
   tr: {
     connected: "Bağlı",
+    replay_wizard: "↻ Kurulum sihirbazını tekrar göster",
     tab_home: "🏠 Ana Sayfa", tab_products: "📦 Ürünler", tab_settings: "⚙️ Ayarlar",
     products_title: "Ürün Fiyat Yönetimi", products_unit: "ürün", loading: "Yükleniyor...",
     search_placeholder: "Ürün ara...",
@@ -741,6 +748,7 @@ const I18N = {
   },
   en: {
     connected: "Connected",
+    replay_wizard: "↻ Show setup wizard again",
     tab_home: "🏠 Home", tab_products: "📦 Products", tab_settings: "⚙️ Settings",
     products_title: "Product Price Management", products_unit: "products", loading: "Loading...",
     search_placeholder: "Search products...",
@@ -845,22 +853,38 @@ async function init() {
 // ── KARŞILAMA SİHİRBAZI ──
 let wizardStep = 0;
 
-function checkFirstVisit() {
-  // İlk ziyaret kontrolü — sunucuda ayar yoksa veya hiç para birimi seçilmemişse göster
-  // localStorage Shopify iframe'inde çalışmayabilir, bu yüzden ayar bazlı kontrol
-  const hasSetup = targets && targets.length > 0 && currencyPairs.length > 0
-    && currencyPairs[0].target;
-  // Daha önce hiç kaydedilmemiş ayar = ilk kullanım
-  apiFetch(`/api/settings?shop=${SHOP}`).then(r => r.json()).then(s => {
-    if (!s.lastUpdated && !s.rates) {
-      showWizard();
+async function checkFirstVisit() {
+  // Kullanıcı sihirbazı daha önce kapattıysa tekrar açma (iframe'de çalışırsa diye try)
+  try {
+    if (localStorage.getItem('kursync_wizard_done') === '1') return;
+  } catch (e) { /* iframe storage engeli — yoksay */ }
+
+  // İlk kullanım = sunucuda hiç kaydedilmiş kur/güncelleme yok
+  let firstVisit = true;
+  try {
+    const res = await apiFetch(`/api/settings?shop=${SHOP}`);
+    if (res.ok) {
+      const s = await res.json();
+      // Daha önce gerçekten kaydetme yapıldıysa: lastUpdated dolu VEYA rates objesi var
+      const hasSaved = !!s.lastUpdated ||
+        (s.rates && Object.keys(s.rates).length > 0) ||
+        (s.lastRates && Object.keys(s.lastRates).length > 0);
+      firstVisit = !hasSaved;
     }
-  }).catch(() => {});
+    // res.ok değilse (401/500 vs.) firstVisit=true kalır → sihirbazı yine de göster
+  } catch (e) {
+    console.warn('checkFirstVisit: ayarlar alınamadı, sihirbaz yine de gösterilecek', e);
+    firstVisit = true;
+  }
+
+  if (firstVisit) showWizard();
 }
 
 function showWizard() {
   wizardStep = 0;
-  document.getElementById('wizard').style.display = 'flex';
+  const el = document.getElementById('wizard');
+  if (!el) return;
+  el.style.display = 'flex';
   updateWizardStep();
 }
 
@@ -879,13 +903,16 @@ function wizardPrev() {
 }
 
 function closeWizard() {
-  document.getElementById('wizard').style.display = 'none';
+  const el = document.getElementById('wizard');
+  if (el) el.style.display = 'none';
+  try { localStorage.setItem('kursync_wizard_done', '1'); } catch (e) {}
 }
 
 function finishWizard() {
   closeWizard();
-  // Kurlar sekmesine yönlendir
-  document.querySelector('.tab[data-tab=settings]')?.click();
+  // Ayarlar (Kurlar) sekmesine yönlendir
+  const tab = document.querySelector('.tab[data-tab="settings"]');
+  if (tab) tab.click();
 }
 
 // ── BEKLEYEN ÜRÜNLER ──
