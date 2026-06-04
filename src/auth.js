@@ -49,6 +49,7 @@ shopifyAuth.get("/callback", async (req, res) => {
         client_id: SHOPIFY_API_KEY,
         client_secret: SHOPIFY_API_SECRET,
         code,
+        expiring: 1,
       }),
     });
 
