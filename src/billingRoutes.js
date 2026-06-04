@@ -1,12 +1,13 @@
 import express from "express";
 import { createSubscription, checkSubscription, isPremium, PLANS } from "./billing.js";
 import { getToken, saveSubscription, getSubscription } from "./db.js";
+import { verifySessionToken, resolveShop } from "./verifyToken.js";
 
 export const billingRouter = express.Router();
 
 // GET /billing/status?shop=xxx — plan durumu
-billingRouter.get("/status", async (req, res) => {
-  const { shop } = req.query;
+billingRouter.get("/status", verifySessionToken, async (req, res) => {
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -27,8 +28,8 @@ billingRouter.get("/status", async (req, res) => {
 });
 
 // POST /billing/subscribe — premium'a geç
-billingRouter.post("/subscribe", async (req, res) => {
-  const { shop } = req.body;
+billingRouter.post("/subscribe", verifySessionToken, async (req, res) => {
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -62,8 +63,8 @@ billingRouter.get("/confirm", async (req, res) => {
 });
 
 // POST /billing/cancel — iptal
-billingRouter.post("/cancel", async (req, res) => {
-  const { shop } = req.body;
+billingRouter.post("/cancel", verifySessionToken, async (req, res) => {
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   try {

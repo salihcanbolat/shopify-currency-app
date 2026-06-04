@@ -5,10 +5,18 @@ import { isPremium, getProductLimit } from "./billing.js";
 import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription,
          getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch,
          getPendingProducts, removePendingProduct, countPendingProducts } from "./db.js";
+import { verifySessionToken, resolveShop } from "./verifyToken.js";
 
 export const apiRouter = express.Router();
 
 global.shopSettings = global.shopSettings || {};
+
+// /api/currencies hariç tüm endpoint'lerde session token doğrulaması
+// (currencies statik veridir, mağazaya özel değil)
+apiRouter.use((req, res, next) => {
+  if (req.path === "/currencies") return next();
+  return verifySessionToken(req, res, next);
+});
 
 // Token functions moved to db.js
 
@@ -34,7 +42,7 @@ apiRouter.get("/currencies", async (req, res) => {
 
 // GET /api/settings
 apiRouter.get("/settings", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const settings = await getSettings(shop) || {
     currencies: [{ base: "USD", target: "TRY", margin: 0 }],
@@ -47,9 +55,8 @@ apiRouter.get("/settings", async (req, res) => {
 
 // POST /api/settings
 apiRouter.post("/settings", async (req, res) => {
-  const { shop, currencies, baseCurrency, targets, autoUpdate,
-          scheduleTime, scheduleTimes, rounding, minPrice, rateThreshold,
-          autoPriceNewProducts } = req.body;
+  const shop = resolveShop(req);
+  const { currencies, baseCurrency, targets, autoUpdate, scheduleTime, scheduleTimes, rounding, minPrice, rateThreshold, autoPriceNewProducts } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   let currencyList = currencies || [];
@@ -102,7 +109,7 @@ apiRouter.get("/rate", async (req, res) => {
 
 // GET /api/collections — koleksiyonları getir
 apiRouter.get("/collections", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
@@ -132,7 +139,8 @@ apiRouter.get("/collections", async (req, res) => {
 
 // GET /api/products
 apiRouter.get("/products", async (req, res) => {
-  const { shop, collection_id } = req.query;
+  const shop = resolveShop(req);
+  const { collection_id } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const token = await getToken(shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
@@ -191,7 +199,8 @@ apiRouter.get("/products", async (req, res) => {
 
 // POST /api/product/update
 apiRouter.post("/product/update", async (req, res) => {
-  const { shop, variantId, usdPrice, baseCurrency, targetCurrency, margin } = req.body;
+  const shop = resolveShop(req);
+  const { variantId, usdPrice, baseCurrency, targetCurrency, margin } = req.body;
   if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
 
   const token = await getToken(shop);
@@ -225,7 +234,8 @@ apiRouter.post("/product/update", async (req, res) => {
 
 // POST /api/sync
 apiRouter.post("/sync", async (req, res) => {
-  const { shop, collection_id } = req.body;
+  const shop = resolveShop(req);
+  const { collection_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -285,7 +295,8 @@ apiRouter.post("/sync", async (req, res) => {
 
 // POST /api/preview - degisiklik yapmadan onizleme
 apiRouter.post("/preview", async (req, res) => {
-  const { shop, collection_id } = req.body;
+  const shop = resolveShop(req);
+  const { collection_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -314,7 +325,7 @@ apiRouter.post("/preview", async (req, res) => {
 
 // GET /api/history - fiyat degisim gecmisi
 apiRouter.get("/history", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const history = await getPriceHistory(shop, 100);
   res.json({ history });
@@ -322,7 +333,7 @@ apiRouter.get("/history", async (req, res) => {
 
 // GET /api/activity - islem logu
 apiRouter.get("/activity", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const activity = await getActivityLog(shop, 50);
   res.json({ activity });
@@ -330,7 +341,8 @@ apiRouter.get("/activity", async (req, res) => {
 
 // POST /api/rollback - son guncellemeyi geri al
 apiRouter.post("/rollback", async (req, res) => {
-  const { shop, batch_id } = req.body;
+  const shop = resolveShop(req);
+  const { batch_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -356,7 +368,7 @@ apiRouter.post("/rollback", async (req, res) => {
 
 // GET /api/pending - USD bekleyen ürünler
 apiRouter.get("/pending", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
   const pending = await getPendingProducts(shop);
   res.json({ pending, count: pending.length });
@@ -364,7 +376,8 @@ apiRouter.get("/pending", async (req, res) => {
 
 // POST /api/pending/resolve - bekleyen ürüne USD ata ve fiyatla
 apiRouter.post("/pending/resolve", async (req, res) => {
-  const { shop, variantId, usdPrice } = req.body;
+  const shop = resolveShop(req);
+  const { variantId, usdPrice } = req.body;
   if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
 
   const token = await getToken(shop);
@@ -407,7 +420,8 @@ apiRouter.post("/pending/resolve", async (req, res) => {
 
 // POST /api/pending/dismiss - bekleyen üründen çıkar (fiyatlamadan)
 apiRouter.post("/pending/dismiss", async (req, res) => {
-  const { shop, variantId } = req.body;
+  const shop = resolveShop(req);
+  const { variantId } = req.body;
   if (!shop || !variantId) return res.status(400).json({ error: "Missing params" });
   await removePendingProduct(shop, variantId);
   res.json({ success: true });
@@ -415,7 +429,7 @@ apiRouter.post("/pending/dismiss", async (req, res) => {
 
 // GET /api/analytics - analitik veriler
 apiRouter.get("/analytics", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   try {
@@ -481,7 +495,7 @@ apiRouter.get("/analytics", async (req, res) => {
 
 // GET /api/dashboard
 apiRouter.get("/dashboard", async (req, res) => {
-  const { shop } = req.query;
+  const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
   const token = await getToken(shop);
@@ -504,7 +518,7 @@ apiRouter.get("/dashboard", async (req, res) => {
       rates.push({ base: c.base, target: c.target, rate, effectiveRate, margin: c.margin || 0 });
     }
 
-    const sub = getSubscription(shop);
+    const sub = await getSubscription(shop);
     const pendingCount = await countPendingProducts(shop);
     res.json({
       productCount: countData.count || 0,

@@ -4,6 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>KurSync</title>
+  <!-- Shopify App Bridge — API key sunucu tarafından doldurulur -->
+  <meta name="shopify-api-key" content="__SHOPIFY_API_KEY__"/>
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -665,6 +668,28 @@
 const urlParams = new URLSearchParams(window.location.search);
 const SHOP = urlParams.get('shop') || 'karinca-digital.myshopify.com';
 
+// ── APP BRIDGE: Güvenli API çağrısı ──
+// Her API isteğine Shopify session token'ı (JWT) ekler.
+// App Bridge yüklüyse token alınır; değilse (geliştirme) header'sız gider.
+async function getSessionToken() {
+  try {
+    if (window.shopify && window.shopify.idToken) {
+      return await window.shopify.idToken();
+    }
+  } catch(e) {
+    console.warn('Session token alınamadı:', e);
+  }
+  return null;
+}
+
+// fetch yerine bunu kullan: otomatik token ekler
+async function apiFetch(url, options = {}) {
+  const token = await getSessionToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, { ...options, headers });
+}
+
 // ── ÇOKLU DİL (i18n) ──
 const I18N = {
   tr: {
@@ -801,7 +826,7 @@ let currencyPairs = [{ base: 'USD', target: 'TRY', margin: 0 }];
 
 async function init() {
   try {
-    const res = await fetch('/api/currencies');
+    const res = await apiFetch('/api/currencies');
     const currencies = await res.json();
     CURRENCIES.push(...currencies);
     await loadSettings();
@@ -826,7 +851,7 @@ function checkFirstVisit() {
   const hasSetup = targets && targets.length > 0 && currencyPairs.length > 0
     && currencyPairs[0].target;
   // Daha önce hiç kaydedilmemiş ayar = ilk kullanım
-  fetch(`/api/settings?shop=${SHOP}`).then(r => r.json()).then(s => {
+  apiFetch(`/api/settings?shop=${SHOP}`).then(r => r.json()).then(s => {
     if (!s.lastUpdated && !s.rates) {
       showWizard();
     }
@@ -868,7 +893,7 @@ let pendingProducts = [];
 
 async function loadPending() {
   try {
-    const res = await fetch(`/api/pending?shop=${SHOP}`);
+    const res = await apiFetch(`/api/pending?shop=${SHOP}`);
     const data = await res.json();
     pendingProducts = data.pending || [];
 
@@ -946,7 +971,7 @@ async function resolvePending(variantId, btn) {
 
   btn.disabled = true; btn.textContent = '...';
   try {
-    const res = await fetch('/api/pending/resolve', {
+    const res = await apiFetch('/api/pending/resolve', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP, variantId, usdPrice })
     });
@@ -962,7 +987,7 @@ async function resolvePending(variantId, btn) {
 
 async function dismissPending(variantId) {
   try {
-    await fetch('/api/pending/dismiss', {
+    await apiFetch('/api/pending/dismiss', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP, variantId })
     });
@@ -1004,7 +1029,7 @@ function setupTabs() {
 // ── DASHBOARD ──
 async function loadDashboard() {
   try {
-    const res = await fetch(`/api/dashboard?shop=${SHOP}`);
+    const res = await apiFetch(`/api/dashboard?shop=${SHOP}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -1106,7 +1131,7 @@ let targets = [{ code: 'TRY', margin: 0 }];
 
 async function loadSettings() {
   try {
-    const res = await fetch(`/api/settings?shop=${SHOP}`);
+    const res = await apiFetch(`/api/settings?shop=${SHOP}`);
     const s = await res.json();
 
     // Eski format (currencies array) → yeni formata çevir
@@ -1253,7 +1278,7 @@ function toggleAutoNew() {
 // ── ANALİTİK ──
 async function loadAnalytics() {
   try {
-    const res = await fetch(`/api/analytics?shop=${SHOP}`);
+    const res = await apiFetch(`/api/analytics?shop=${SHOP}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -1341,7 +1366,7 @@ async function saveSettings() {
   btn.innerHTML = '<span class="btn-spinner"></span> Kaydediliyor...';
 
   try {
-    await fetch('/api/settings', {
+    await apiFetch('/api/settings', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         shop: SHOP,
@@ -1362,7 +1387,7 @@ async function saveSettings() {
 
   btn.innerHTML = '<span class="btn-spinner"></span> Güncelleniyor...';
   try {
-    const res = await fetch('/api/sync', {
+    const res = await apiFetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP })
     });
@@ -1382,7 +1407,7 @@ async function syncAll() {
   document.querySelector('[onclick="syncAll()"]').disabled = true;
   addLog('Tüm ürün fiyatları güncelleniyor...', '');
   try {
-    const res = await fetch('/api/sync', {
+    const res = await apiFetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP })
     });
@@ -1399,7 +1424,7 @@ async function syncAll() {
 // ── COLLECTIONS ──
 async function loadCollections() {
   try {
-    const res = await fetch(`/api/collections?shop=${SHOP}`);
+    const res = await apiFetch(`/api/collections?shop=${SHOP}`);
     const data = await res.json();
     const grid = document.getElementById('collection-grid');
     grid.innerHTML = '';
@@ -1576,7 +1601,7 @@ async function saveVariantPrice(variantId, btn) {
 
   btn.disabled = true; btn.textContent = '...';
   try {
-    const res = await fetch('/api/product/update', {
+    const res = await apiFetch('/api/product/update', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ shop:SHOP, variantId, usdPrice })
     });
@@ -1601,7 +1626,7 @@ async function saveAllPrices() {
 
   for (const item of toSave) {
     try {
-      const res = await fetch('/api/product/update', {
+      const res = await apiFetch('/api/product/update', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({shop:SHOP, variantId:item.variantId, usdPrice:item.usdPrice})
       });
@@ -1629,7 +1654,7 @@ async function syncCollection() {
   document.querySelector('[onclick="syncCollection()"]').disabled = true;
 
   try {
-    const res = await fetch('/api/sync', {
+    const res = await apiFetch('/api/sync', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ shop:SHOP, collection_id: selectedCollection })
     });
@@ -1651,7 +1676,7 @@ async function upgradeToPremium() {
   btn.disabled = true;
 
   try {
-    const res = await fetch('/billing/subscribe', {
+    const res = await apiFetch('/billing/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shop: SHOP })
@@ -1678,7 +1703,7 @@ async function showPreview() {
 
   // Önce ayarları kaydet ki önizleme güncel kurallarla çalışsın
   try {
-    await fetch('/api/settings', {
+    await apiFetch('/api/settings', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         shop: SHOP, baseCurrency, targets, currencies: currencyPairs,
@@ -1690,7 +1715,7 @@ async function showPreview() {
       })
     });
 
-    const res = await fetch('/api/preview', {
+    const res = await apiFetch('/api/preview', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP })
     });
@@ -1725,7 +1750,7 @@ async function showPreview() {
 // ── GEÇMİŞ ──
 async function loadHistory() {
   try {
-    const res = await fetch(`/api/history?shop=${SHOP}`);
+    const res = await apiFetch(`/api/history?shop=${SHOP}`);
     const data = await res.json();
     const tbody = document.getElementById('history-tbody');
     tbody.innerHTML = '';
@@ -1753,7 +1778,7 @@ async function loadHistory() {
 
 async function loadActivity() {
   try {
-    const res = await fetch(`/api/activity?shop=${SHOP}`);
+    const res = await apiFetch(`/api/activity?shop=${SHOP}`);
     const data = await res.json();
     const list = document.getElementById('activity-list');
     list.innerHTML = '';
@@ -1786,7 +1811,7 @@ async function rollbackLast() {
   document.querySelector('[onclick="rollbackLast()"]').disabled = true;
 
   try {
-    const res = await fetch('/api/rollback', {
+    const res = await apiFetch('/api/rollback', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ shop: SHOP })
     });
