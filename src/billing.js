@@ -14,6 +14,7 @@ export const PLANS = {
     name: "Unlimited",
     price: 9.99,
     yearlyPrice: 99.99,
+    trialDays: 7,
     productLimit: Infinity,
     features: ["Sınırsız ürün", "Otomatik senkronizasyon", "Çoklu kur çifti", "Koleksiyon bazlı güncelleme", "Zamanlama"],
   },
@@ -33,6 +34,7 @@ export async function createSubscription(shop, token, billingCycle = "monthly") 
   const isYearly = billingCycle === "yearly";
   const amount = isYearly ? PLANS.unlimited.yearlyPrice : PLANS.unlimited.price;
   const interval = isYearly ? "ANNUAL" : "EVERY_30_DAYS";
+  const TRIAL_DAYS = PLANS.unlimited.trialDays || 0;
 
   const mutation = `
     mutation {
@@ -40,6 +42,7 @@ export async function createSubscription(shop, token, billingCycle = "monthly") 
         name: "KurSync Unlimited (${isYearly ? "Yearly" : "Monthly"})"
         returnUrl: "${HOST}/billing/confirm?shop=${shop}"
         test: ${process.env.NODE_ENV !== "production"}
+        trialDays: ${TRIAL_DAYS}
         lineItems: [{
           plan: {
             appRecurringPricingDetails: {
