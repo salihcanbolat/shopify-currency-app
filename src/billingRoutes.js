@@ -1,81 +1,137 @@
-import express from "express";
-import { createSubscription, checkSubscription, isPremium, PLANS } from "./billing.js";
-import { getToken, saveSubscription, getSubscription } from "./db.js";
-import { verifySessionToken, resolveShop } from "./verifyToken.js";
+import { API_VERSION } from "./graphql.js";
 
-export const billingRouter = express.Router();
+const HOST = process.env.HOST || "https://kursync-currency-app-production.up.railway.app";
+const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 
-// GET /billing/status?shop=xxx — plan durumu
-billingRouter.get("/status", verifySessionToken, async (req, res) => {
-  const shop = resolveShop(req);
-  if (!shop) return res.status(400).json({ error: "Missing shop" });
+export const PLANS = {
+  free: {
+    name: "Free",
+    price: 0,
+    productLimit: 50,
+    features: ["50 ürüne kadar", "Manuel senkronizasyon", "1 kur çifti"],
+  },
+  unlimited: {
+    name: "Unlimited",
+    price: 9.99,
+    yearlyPrice: 99.99,
+    trialDays: 7,
+    productLimit: Infinity,
+    features: ["Sınırsız ürün", "Otomatik senkronizasyon", "Çoklu kur çifti", "Koleksiyon bazlı güncelleme", "Zamanlama"],
+  },
+};
 
-  const token = await getToken(shop);
-  if (!token) return res.status(401).json({ error: "Not authenticated" });
+export function isPremium(shop) {
+  const sub = global.shopSubscriptions?.[shop];
+  return sub?.plan === "unlimited" && sub?.status === "active";
+}
 
-  try {
-    const sub = await checkSubscription(shop, token);
-    res.json({
-      ...sub,
-      plans: PLANS,
-      isPremium: sub.plan === "unlimited" && sub.status === "active",
-    });
-  } catch(e) {
-    // Abonelik kontrolü başarısız olursa mevcut durumu döndür
-    const sub = getSubscription(shop);
-    res.json({ ...sub, plans: PLANS, isPremium: isPremium(shop) });
-  }
-});
+export function getProductLimit(shop) {
+  return isPremium(shop) ? Infinity : PLANS.free.productLimit;
+}
 
-// POST /billing/subscribe — premium'a geç
-billingRouter.post("/subscribe", verifySessionToken, async (req, res) => {
-  const shop = resolveShop(req);
-  if (!shop) return res.status(400).json({ error: "Missing shop" });
+// Shopify'da ücretli abonelik oluştur (cycle: "monthly" | "yearly")
+export async function createSubscription(shop, token, billingCycle = "monthly") {
+  const isYearly = billingCycle === "yearly";
+  const amount = isYearly ? PLANS.unlimited.yearlyPrice : PLANS.unlimited.price;
+  const interval = isYearly ? "ANNUAL" : "EVERY_30_DAYS";
+  const TRIAL_DAYS = PLANS.unlimited.trialDays || 0;
 
-  const token = await getToken(shop);
-  if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-  try {
-    const cycle = req.body?.cycle === "yearly" ? "yearly" : "monthly";
-    const result = await createSubscription(shop, token, cycle);
-    res.json({ success: true, confirmationUrl: result.confirmationUrl });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// GET /billing/confirm — Shopify ödeme onayı sonrası redirect
-billingRouter.get("/confirm", async (req, res) => {
-  const { shop, charge_id } = req.query;
-  if (!shop) return res.redirect("/");
-
-  const token = await getToken(shop);
-  if (token) {
-    try {
-      await checkSubscription(shop, token);
-    } catch(e) {
-      console.error("Subscription confirm error:", e.message);
+  const mutation = `
+    mutation {
+      appSubscriptionCreate(
+        name: "KurSync Unlimited (${isYearly ? "Yearly" : "Monthly"})"
+        returnUrl: "${HOST}/billing/confirm?shop=${shop}"
+        test: ${process.env.NODE_ENV !== "production"}
+        trialDays: ${TRIAL_DAYS}
+        lineItems: [{
+          plan: {
+            appRecurringPricingDetails: {
+              price: { amount: ${amount}, currencyCode: USD }
+              interval: ${interval}
+            }
+          }
+        }]
+      ) {
+        appSubscription { id status }
+        confirmationUrl
+        userErrors { field message }
+      }
     }
+  `;
+
+  const response = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token,
+    },
+    body: JSON.stringify({ query: mutation }),
+  });
+
+  const data = await response.json();
+  const result = data.data?.appSubscriptionCreate;
+
+  if (result?.userErrors?.length > 0) {
+    throw new Error(result.userErrors[0].message);
   }
 
-  // Shopify Admin'deki uygulamaya yönlendir
-  const apiKey = process.env.SHOPIFY_API_KEY;
-  res.redirect(`https://admin.shopify.com/store/${shop.replace(".myshopify.com","")}/apps/${apiKey}`);
-});
+  return {
+    confirmationUrl: result?.confirmationUrl,
+    subscriptionId: result?.appSubscription?.id,
+  };
+}
 
-// POST /billing/cancel — iptal
-billingRouter.post("/cancel", verifySessionToken, async (req, res) => {
-  const shop = resolveShop(req);
-  if (!shop) return res.status(400).json({ error: "Missing shop" });
+// Aktif aboneliği kontrol et
+export async function checkSubscription(shop, token) {
+  const query = `
+    {
+      currentAppInstallation {
+        activeSubscriptions {
+          id
+          name
+          status
+          currentPeriodEnd
+          lineItems {
+            plan {
+              pricingDetails {
+                ... on AppRecurringPricing {
+                  price { amount currencyCode }
+                  interval
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
 
-  try {
-    let subs = {};
-    try { subs = JSON.parse(fs.readFileSync("subscriptions.json", "utf8")); } catch {}
-    subs[shop] = { plan: "free", status: "active" };
-    fs.writeFileSync("subscriptions.json", JSON.stringify(subs, null, 2));
-    if (global.shopSubscriptions) global.shopSubscriptions[shop] = { plan: "free", status: "active" };
-    res.json({ success: true });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
+  const response = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const data = await response.json();
+  const subs = data.data?.currentAppInstallation?.activeSubscriptions || [];
+
+  if (subs.length > 0 && subs[0].status === "ACTIVE") {
+    const subData = {
+      plan: "unlimited",
+      status: "active",
+      subscriptionId: subs[0].id,
+      currentPeriodEnd: subs[0].currentPeriodEnd,
+    };
+    if (!global.shopSubscriptions) global.shopSubscriptions = {};
+    global.shopSubscriptions[shop] = subData;
+    return subData;
   }
-});
+
+  const freeData = { plan: "free", status: "active" };
+  if (!global.shopSubscriptions) global.shopSubscriptions = {};
+  global.shopSubscriptions[shop] = freeData;
+  return freeData;
+}
