@@ -10,9 +10,10 @@ export const PLANS = {
     productLimit: 50,
     features: ["50 ürüne kadar", "Manuel senkronizasyon", "1 kur çifti"],
   },
-  premium: {
-    name: "Premium",
-    price: 4.99,
+  unlimited: {
+    name: "Unlimited",
+    price: 9.99,
+    yearlyPrice: 99.99,
     productLimit: Infinity,
     features: ["Sınırsız ürün", "Otomatik senkronizasyon", "Çoklu kur çifti", "Koleksiyon bazlı güncelleme", "Zamanlama"],
   },
@@ -20,26 +21,30 @@ export const PLANS = {
 
 export function isPremium(shop) {
   const sub = global.shopSubscriptions?.[shop];
-  return sub?.plan === "premium" && sub?.status === "active";
+  return sub?.plan === "unlimited" && sub?.status === "active";
 }
 
 export function getProductLimit(shop) {
   return isPremium(shop) ? Infinity : PLANS.free.productLimit;
 }
 
-// Shopify'da ücretli abonelik oluştur
-export async function createSubscription(shop, token) {
+// Shopify'da ücretli abonelik oluştur (cycle: "monthly" | "yearly")
+export async function createSubscription(shop, token, billingCycle = "monthly") {
+  const isYearly = billingCycle === "yearly";
+  const amount = isYearly ? PLANS.unlimited.yearlyPrice : PLANS.unlimited.price;
+  const interval = isYearly ? "ANNUAL" : "EVERY_30_DAYS";
+
   const mutation = `
     mutation {
       appSubscriptionCreate(
-        name: "KurSync Premium"
+        name: "KurSync Unlimited (${isYearly ? "Yearly" : "Monthly"})"
         returnUrl: "${HOST}/billing/confirm?shop=${shop}"
         test: ${process.env.NODE_ENV !== "production"}
         lineItems: [{
           plan: {
             appRecurringPricingDetails: {
-              price: { amount: 4.99, currencyCode: USD }
-              interval: EVERY_30_DAYS
+              price: { amount: ${amount}, currencyCode: USD }
+              interval: ${interval}
             }
           }
         }]
@@ -112,7 +117,7 @@ export async function checkSubscription(shop, token) {
 
   if (subs.length > 0 && subs[0].status === "ACTIVE") {
     const subData = {
-      plan: "premium",
+      plan: "unlimited",
       status: "active",
       subscriptionId: subs[0].id,
       currentPeriodEnd: subs[0].currentPeriodEnd,

@@ -18,7 +18,7 @@ billingRouter.get("/status", verifySessionToken, async (req, res) => {
     res.json({
       ...sub,
       plans: PLANS,
-      isPremium: sub.plan === "premium" && sub.status === "active",
+      isPremium: sub.plan === "unlimited" && sub.status === "active",
     });
   } catch(e) {
     // Abonelik kontrolü başarısız olursa mevcut durumu döndür
@@ -36,7 +36,8 @@ billingRouter.post("/subscribe", verifySessionToken, async (req, res) => {
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const result = await createSubscription(shop, token);
+    const cycle = req.body?.cycle === "yearly" ? "yearly" : "monthly";
+    const result = await createSubscription(shop, token, cycle);
     res.json({ success: true, confirmationUrl: result.confirmationUrl });
   } catch(e) {
     res.status(500).json({ error: e.message });
