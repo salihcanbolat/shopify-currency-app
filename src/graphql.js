@@ -70,6 +70,7 @@ export async function updateVariantPrice(shop, token, variantId, price, compareA
   const mutation = `
     mutation BulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
       productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants { id price compareAtPrice }
         userErrors { field message }
       }
     }
@@ -82,8 +83,14 @@ export async function updateVariantPrice(shop, token, variantId, price, compareA
   const variants = [variantInput];
 
   const data = await shopifyGraphQL(shop, token, mutation, { productId: productGid, variants });
-  const errs = data?.productVariantsBulkUpdate?.userErrors;
+  const result = data?.productVariantsBulkUpdate;
+  const errs = result?.userErrors;
   if (errs && errs.length) {
     throw new Error("[Variant update] " + errs.map(e => e.message).join("; "));
   }
+  // Sessiz başarısızlığı yakala: hiç variant dönmediyse güncelleme uygulanmadı demektir
+  if (!result?.productVariants || result.productVariants.length === 0) {
+    throw new Error(`[Variant update] Güncelleme uygulanmadı (variant ${variantId}, product ${productGid}). Dönen: ${JSON.stringify(data)}`);
+  }
+  console.log(`✅ Variant ${variantId} güncellendi → price: ${result.productVariants[0].price}`);
 }
