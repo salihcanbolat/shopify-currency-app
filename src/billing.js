@@ -1,6 +1,6 @@
 import { API_VERSION } from "./graphql.js";
 
-const HOST = process.env.HOST || "https://shopify-currency-app-production.up.railway.app";
+const HOST = process.env.HOST || "https://kursync-currency-app-production.up.railway.app";
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 
 export const PLANS = {

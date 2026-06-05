@@ -1,6 +1,6 @@
 name = "KurSync"
 client_id = "47e4ecbf209e9c6a94ad305ea043816c"
-application_url = "https://shopify-currency-app-production.up.railway.app"
+application_url = "https://kursync-currency-app-production.up.railway.app"
 embedded = true
 
 [access_scopes]
@@ -8,7 +8,7 @@ scopes = "write_products,read_products,read_inventory"
 
 [auth]
 redirect_urls = [
-  "https://shopify-currency-app-production.up.railway.app/auth/callback"
+  "https://kursync-currency-app-production.up.railway.app/auth/callback"
 ]
 
 [webhooks]
@@ -31,7 +31,7 @@ topics = ["products/create"]
 uri = "/webhooks/products/create"
 
 [app_proxy]
-url = "https://shopify-currency-app-production.up.railway.app"
+url = "https://kursync-currency-app-production.up.railway.app"
 subpath = "apps"
 prefix = "apps"
 

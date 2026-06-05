@@ -8,7 +8,7 @@ export const shopifyAuth = express.Router();
 const SCOPES = "write_products,read_products,read_inventory";
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
-const HOST = process.env.HOST || "https://shopify-currency-app-production.up.railway.app";
+const HOST = process.env.HOST || "https://kursync-currency-app-production.up.railway.app";
 
 export async function loadTokens() {
   await loadAllTokens();
