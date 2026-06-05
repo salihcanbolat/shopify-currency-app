@@ -6,6 +6,7 @@ import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription,
          getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch,
          getPendingProducts, removePendingProduct, countPendingProducts } from "./db.js";
 import { verifySessionToken, resolveShop } from "./verifyToken.js";
+import { shopifyGraphQL, numericId, toGid, API_VERSION, updateVariantPrice } from "./graphql.js";
 
 export const apiRouter = express.Router();
 
@@ -115,20 +116,35 @@ apiRouter.get("/collections", async (req, res) => {
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
-    const res2 = await fetch(`https://${shop}/admin/api/2024-01/custom_collections.json?limit=250&fields=id,title,image`, {
-      headers: { "X-Shopify-Access-Token": token },
-    });
-    const data = await res2.json();
+    // GraphQL'de custom/smart ayrımı yok; tek "collections" sorgusu ikisini de getirir
+    const query = `
+      query Collections($cursor: String) {
+        collections(first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          edges { node { id title image { url } } }
+        }
+      }
+    `;
 
-    const res3 = await fetch(`https://${shop}/admin/api/2024-01/smart_collections.json?limit=250&fields=id,title,image`, {
-      headers: { "X-Shopify-Access-Token": token },
-    });
-    const data3 = await res3.json();
+    let edges = [];
+    let cursor = null;
+    let hasNext = true;
+    while (hasNext) {
+      const data = await shopifyGraphQL(shop, token, query, { cursor });
+      const conn = data?.collections;
+      if (!conn) break;
+      edges = edges.concat(conn.edges || []);
+      hasNext = conn.pageInfo?.hasNextPage;
+      cursor = conn.pageInfo?.endCursor;
+    }
 
     const collections = [
       { id: "all", title: "Tüm Ürünler", image: null },
-      ...(data.custom_collections || []).map(c => ({ id: c.id, title: c.title, image: c.image?.src || null })),
-      ...(data3.smart_collections || []).map(c => ({ id: c.id, title: c.title, image: c.image?.src || null })),
+      ...edges.map(({ node: c }) => ({
+        id: numericId(c.id),
+        title: c.title,
+        image: c.image?.url || null,
+      })),
     ];
 
     res.json({ collections });
@@ -146,47 +162,65 @@ apiRouter.get("/products", async (req, res) => {
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
-    let allProducts = [];
-    let pageInfo = null;
+    // GraphQL ile ürünleri çek (cursor tabanlı sayfalama)
+    const inCollection = collection_id && collection_id !== "all";
+    let allEdges = [];
+    let cursor = null;
     let hasNextPage = true;
 
+    const query = `
+      query Products($cursor: String, $query: String) {
+        products(first: 100, after: $cursor, query: $query) {
+          pageInfo { hasNextPage endCursor }
+          edges {
+            node {
+              id
+              title
+              featuredImage { url }
+              variants(first: 100) {
+                edges {
+                  node {
+                    id
+                    title
+                    price
+                    compareAtPrice
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    // Koleksiyon filtresi: GraphQL'de collection_id ile query string kullanılır
+    const queryFilter = inCollection
+      ? `collection_id:${numericId(collection_id)}`
+      : null;
+
     while (hasNextPage) {
-      let url;
-      if (collection_id && collection_id !== "all") {
-        url = pageInfo
-          ? `https://${shop}/admin/api/2024-01/products.json?limit=250&page_info=${pageInfo}`
-          : `https://${shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,image,variants&collection_id=${collection_id}`;
-      } else {
-        url = pageInfo
-          ? `https://${shop}/admin/api/2024-01/products.json?limit=250&page_info=${pageInfo}`
-          : `https://${shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,image,variants`;
-      }
-
-      const response = await fetch(url, { headers: { "X-Shopify-Access-Token": token } });
-      const linkHeader = response.headers.get("link");
-      const data = await response.json();
-      if (data.errors) throw new Error(JSON.stringify(data.errors));
-      allProducts = allProducts.concat(data.products || []);
-
-      if (linkHeader && linkHeader.includes('rel="next"')) {
-        const match = linkHeader.match(/page_info=([^&>]+)[^>]*>;\s*rel="next"/);
-        pageInfo = match ? match[1] : null;
-        hasNextPage = !!pageInfo;
-      } else {
-        hasNextPage = false;
-      }
+      const data = await shopifyGraphQL(shop, token, query, {
+        cursor,
+        query: queryFilter,
+      });
+      const conn = data?.products;
+      if (!conn) break;
+      allEdges = allEdges.concat(conn.edges || []);
+      hasNextPage = conn.pageInfo?.hasNextPage;
+      cursor = conn.pageInfo?.endCursor;
     }
 
-    const products = allProducts.map(p => ({
-      id: p.id,
+    // Çıktıyı eski REST formatıyla birebir aynı tut (frontend değişmesin)
+    const products = allEdges.map(({ node: p }) => ({
+      id: numericId(p.id),
       title: p.title,
-      image: p.image?.src || null,
-      variants: p.variants.map(v => ({
-        id: v.id,
+      image: p.featuredImage?.url || null,
+      variants: (p.variants?.edges || []).map(({ node: v }) => ({
+        id: numericId(v.id),
         title: v.title,
         price: v.price,
-        compareAtPrice: v.compare_at_price,
-        usdPrice: v.compare_at_price || "",
+        compareAtPrice: v.compareAtPrice,
+        usdPrice: v.compareAtPrice || "",
       })),
     }));
 
@@ -216,15 +250,12 @@ apiRouter.post("/product/update", async (req, res) => {
     const effectiveRate = rate * (1 + marginVal / 100);
     const tryPrice = (parseFloat(usdPrice) * effectiveRate).toFixed(2);
 
-    const response = await fetch(`https://${shop}/admin/api/2024-01/variants/${variantId}.json`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
-      body: JSON.stringify({ variant: { id: variantId, price: tryPrice, compare_at_price: parseFloat(usdPrice).toFixed(2) } }),
-    });
-
-    const result = await response.json();
-    if (result.errors) throw new Error(JSON.stringify(result.errors));
-    if (!result.variant) throw new Error("Variant güncellenemedi");
+    await updateVariantPrice(
+      shop, token, variantId,
+      tryPrice,
+      parseFloat(usdPrice).toFixed(2),
+      req.body.productId || null
+    );
 
     res.json({ success: true, tryPrice, rate: effectiveRate });
   } catch (err) {
@@ -405,11 +436,12 @@ apiRouter.post("/pending/resolve", async (req, res) => {
     const minPrice = parseFloat(settings?.minPrice) || 0;
     if (minPrice > 0) tryPrice = Math.max(parseFloat(tryPrice), minPrice).toFixed(2);
 
-    await fetch(`https://${shop}/admin/api/2024-01/variants/${variantId}.json`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
-      body: JSON.stringify({ variant: { id: variantId, price: tryPrice, compare_at_price: parseFloat(usdPrice).toFixed(2) } }),
-    });
+    await updateVariantPrice(
+      shop, token, variantId,
+      tryPrice,
+      parseFloat(usdPrice).toFixed(2),
+      req.body.productId || null
+    );
 
     await removePendingProduct(shop, variantId);
     res.json({ success: true, tryPrice });
@@ -504,11 +536,12 @@ apiRouter.get("/dashboard", async (req, res) => {
   const settings = global.shopSettings[shop] || {};
 
   try {
-    // Ürün sayısı
-    const countRes = await fetch(`https://${shop}/admin/api/2024-01/products/count.json`, {
-      headers: { "X-Shopify-Access-Token": token },
-    });
-    const countData = await countRes.json();
+    // Ürün sayısı (GraphQL)
+    const countData = await shopifyGraphQL(
+      shop, token,
+      `query { productsCount { count } }`
+    );
+    const productCount = countData?.productsCount?.count || 0;
 
     // Güncel kurlar
     const rates = [];
@@ -521,7 +554,7 @@ apiRouter.get("/dashboard", async (req, res) => {
     const sub = await getSubscription(shop);
     const pendingCount = await countPendingProducts(shop);
     res.json({
-      productCount: countData.count || 0,
+      productCount: productCount,
       pendingCount,
       lastUpdated: settings.lastUpdated || null,
       rates,

@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { logPriceChange, logActivity } from "./db.js";
+import { shopifyGraphQL, numericId, updateVariantPrice } from "./graphql.js";
 
 const DELAY_MS = 300;
 
@@ -39,35 +40,48 @@ export async function updateCollectionPrices(shop, accessToken, effectiveRate, c
 }
 
 async function fetchAllVariants(shop, accessToken, collectionId) {
+  // GraphQL ile ürünleri + variant'ları çek. Çıktı eski REST formatına uygun:
+  // [{ id, title, variants: [{ id, title, price, compare_at_price }] }]
+  const query = `
+    query Products($cursor: String, $query: String) {
+      products(first: 100, after: $cursor, query: $query) {
+        pageInfo { hasNextPage endCursor }
+        edges {
+          node {
+            id
+            title
+            variants(first: 100) {
+              edges { node { id title price compareAtPrice } }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const queryFilter = collectionId ? `collection_id:${numericId(collectionId)}` : null;
+
   let allProducts = [];
-  let pageInfo = null;
+  let cursor = null;
   let hasNextPage = true;
 
   while (hasNextPage) {
-    let url;
-    if (collectionId) {
-      url = pageInfo
-        ? `https://${shop}/admin/api/2024-01/products.json?limit=250&page_info=${pageInfo}`
-        : `https://${shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants&collection_id=${collectionId}`;
-    } else {
-      url = pageInfo
-        ? `https://${shop}/admin/api/2024-01/products.json?limit=250&page_info=${pageInfo}`
-        : `https://${shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`;
+    const data = await shopifyGraphQL(shop, accessToken, query, { cursor, query: queryFilter });
+    const conn = data?.products;
+    if (!conn) break;
+    for (const { node: p } of (conn.edges || [])) {
+      allProducts.push({
+        id: numericId(p.id),
+        title: p.title,
+        variants: (p.variants?.edges || []).map(({ node: v }) => ({
+          id: numericId(v.id),
+          title: v.title,
+          price: v.price,
+          compare_at_price: v.compareAtPrice,
+        })),
+      });
     }
-
-    const response = await fetch(url, { headers: { "X-Shopify-Access-Token": accessToken } });
-    const linkHeader = response.headers.get("link");
-    const data = await response.json();
-    if (data.errors) throw new Error(JSON.stringify(data.errors));
-    allProducts = allProducts.concat(data.products || []);
-
-    if (linkHeader && linkHeader.includes('rel="next"')) {
-      const match = linkHeader.match(/page_info=([^&>]+)[^>]*>;\s*rel="next"/);
-      pageInfo = match ? match[1] : null;
-      hasNextPage = !!pageInfo;
-    } else {
-      hasNextPage = false;
-    }
+    hasNextPage = conn.pageInfo?.hasNextPage;
+    cursor = conn.pageInfo?.endCursor;
   }
   return allProducts;
 }
@@ -82,10 +96,10 @@ async function updateProducts(shop, accessToken, effectiveRate, collectionId, li
 
   const allProducts = await fetchAllVariants(shop, accessToken, collectionId);
 
-  // Ürün başlığını variant'a bağla
+  // Ürün başlığını + ürün ID'sini variant'a bağla
   const variantList = [];
   allProducts.forEach(p => {
-    p.variants.forEach(v => variantList.push({ ...v, productTitle: p.title }));
+    p.variants.forEach(v => variantList.push({ ...v, productTitle: p.title, productId: p.id }));
   });
 
   const limited = isFinite(limit) ? variantList.slice(0, limit) : variantList;
@@ -105,25 +119,22 @@ async function updateProducts(shop, accessToken, effectiveRate, collectionId, li
 
       const oldPrice = variant.price;
 
-      const response = await fetch(`https://${shop}/admin/api/2024-01/variants/${variant.id}.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
-        body: JSON.stringify({ variant: { id: variant.id, price: tryPrice, compare_at_price: usdPrice.toFixed(2) } }),
-      });
-
-      const result = await response.json();
-      if (result.variant) {
-        totalUpdated++;
-        if (log) {
-          await logPriceChange(shop, batchId, {
-            variantId: variant.id,
-            productTitle: variant.productTitle,
-            oldPrice,
-            newPrice: tryPrice,
-            usdPrice,
-            rate: effectiveRate,
-          });
-        }
+      await updateVariantPrice(
+        shop, accessToken, variant.id,
+        tryPrice,
+        usdPrice.toFixed(2),
+        variant.productId
+      );
+      totalUpdated++;
+      if (log) {
+        await logPriceChange(shop, batchId, {
+          variantId: variant.id,
+          productTitle: variant.productTitle,
+          oldPrice,
+          newPrice: tryPrice,
+          usdPrice,
+          rate: effectiveRate,
+        });
       }
 
       if (totalUpdated % 5 === 0) await sleep(300);
@@ -182,13 +193,9 @@ export async function rollbackPrices(shop, accessToken, rows) {
   let restored = 0;
   for (const row of rows) {
     try {
-      const response = await fetch(`https://${shop}/admin/api/2024-01/variants/${row.variant_id}.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
-        body: JSON.stringify({ variant: { id: row.variant_id, price: row.old_price } }),
-      });
-      const result = await response.json();
-      if (result.variant) restored++;
+      // compareAtPrice null geçilince değişmez; sadece fiyatı eski haline al
+      await updateVariantPrice(shop, accessToken, row.variant_id, row.old_price, null, null);
+      restored++;
       if (restored % 5 === 0) await sleep(300);
     } catch(e) {
       console.error(`Rollback ${row.variant_id} hata:`, e.message);

@@ -1,3 +1,5 @@
+import { API_VERSION } from "./graphql.js";
+
 const HOST = process.env.HOST || "https://shopify-currency-app-production.up.railway.app";
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 
@@ -49,7 +51,7 @@ export async function createSubscription(shop, token) {
     }
   `;
 
-  const response = await fetch(`https://${shop}/admin/api/2024-01/graphql.json`, {
+  const response = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -96,7 +98,7 @@ export async function checkSubscription(shop, token) {
     }
   `;
 
-  const response = await fetch(`https://${shop}/admin/api/2024-01/graphql.json`, {
+  const response = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

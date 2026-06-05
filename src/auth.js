@@ -1,6 +1,7 @@
 import express from "express";
 import crypto from "crypto";
 import { saveToken, loadAllTokens } from "./db.js";
+import { shopifyGraphQL } from "./graphql.js";
 
 export const shopifyAuth = express.Router();
 
@@ -61,18 +62,18 @@ shopifyAuth.get("/callback", async (req, res) => {
     const expiresAt = expires_in ? Date.now() + expires_in * 1000 : null;
     await saveToken(shop, access_token, refresh_token || null, expiresAt);
 
-    // products/create webhook'unu otomatik kaydet
+    // products/create webhook'unu otomatik kaydet (GraphQL)
     try {
-      await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": access_token },
-        body: JSON.stringify({
-          webhook: {
-            topic: "products/create",
-            address: `${HOST}/webhooks/products/create`,
-            format: "json",
-          },
-        }),
+      const mutation = `
+        mutation webhookCreate($topic: WebhookSubscriptionTopic!, $sub: WebhookSubscriptionInput!) {
+          webhookSubscriptionCreate(topic: $topic, webhookSubscription: $sub) {
+            userErrors { field message }
+          }
+        }
+      `;
+      await shopifyGraphQL(shop, access_token, mutation, {
+        topic: "PRODUCTS_CREATE",
+        sub: { callbackUrl: `${HOST}/webhooks/products/create`, format: "JSON" },
       });
       console.log(`\u2705 products/create webhook kaydedildi: ${shop}`);
     } catch(e) {
