@@ -17,6 +17,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// GDPR/compliance webhook'ları RAW body ile yakalanmalı (HMAC doğrulaması için).
+// Bu, global express.json()'dan ÖNCE gelmeli; aksi halde body parse edilir ve HMAC bozulur.
+app.use(
+  "/webhooks",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    // express.raw() body'yi Buffer olarak req.body'ye koyar; rawBody olarak sakla
+    req.rawBody = req.body;
+    next();
+  },
+  gdprRouter
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,7 +71,6 @@ app.use(express.static(path.join(__dirname, "../public")));
 // Routes
 app.use("/auth", shopifyAuth);
 app.use("/api", apiRouter);
-app.use("/webhooks", gdprRouter);
 app.use("/billing", billingRouter);
 app.use("/webhooks", productWebhookRouter);
 

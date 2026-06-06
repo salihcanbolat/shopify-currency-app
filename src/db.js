@@ -427,3 +427,17 @@ export async function countPendingProducts(shop) {
     return 0;
   }
 }
+
+// GDPR shop/redact: bir mağazaya ait tüm verileri sil
+export async function deleteShopData(shop) {
+  const db = getDb();
+  const tables = ["shop_tokens", "shop_settings", "shop_subscriptions", "price_history", "activity_log", "pending_products"];
+  for (const t of tables) {
+    try {
+      await db.query(`DELETE FROM ${t} WHERE shop = $1`, [shop]);
+    } catch (e) {
+      console.error(`deleteShopData ${t} hatası:`, e.message);
+    }
+  }
+  console.log(`🗑️ Mağaza verileri silindi (GDPR): ${shop}`);
+}
