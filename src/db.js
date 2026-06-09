@@ -129,6 +129,46 @@ export async function saveToken(shop, token, refreshToken = null, expiresAt = nu
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
 
+// Token Exchange: session token (JWT) ile offline access token al.
+// DB'de token yoksa (yeni mağaza / kurulum sonrası ilk istek) bunu kullanırız.
+// Böylece uygulama ayrı bir OAuth adımı olmadan otomatik aktif olur.
+export async function exchangeSessionToken(shop, sessionToken) {
+  if (!sessionToken) return null;
+  const body = new URLSearchParams({
+    client_id: SHOPIFY_API_KEY,
+    client_secret: SHOPIFY_API_SECRET,
+    grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+    subject_token: sessionToken,
+    subject_token_type: "urn:ietf:params:oauth:token-type:id_token",
+    requested_token_type: "urn:shopify:params:oauth:token-type:offline-access-token",
+    expiring: "1",
+  });
+  try {
+    const resp = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+      },
+      body: body.toString(),
+    });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error(`Token exchange beklenmeyen yanıt: ${text.slice(0, 120)}`); }
+    if (!resp.ok || !data.access_token) {
+      throw new Error(`Token exchange başarısız (${resp.status}): ${JSON.stringify(data)}`);
+    }
+    const expiresAt = data.expires_in ? Date.now() + data.expires_in * 1000 : null;
+    await saveToken(shop, data.access_token, data.refresh_token || null, expiresAt);
+    console.log(`🔄 Token exchange başarılı: ${shop} (offline token alındı)`);
+    return data.access_token;
+  } catch (e) {
+    console.error(`Token exchange hatası (${shop}):`, e.message);
+    return null;
+  }
+}
+
 // Refresh token ile yeni access token al (Shopify token rotasyonu)
 async function refreshAccessToken(shop, refreshToken) {
   console.log(`🔄 Token yenileniyor: ${shop}`);

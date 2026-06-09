@@ -4,7 +4,8 @@ import { updateAllProductPrices, updateCollectionPrices, previewPrices, rollback
 import { isPremium, getProductLimit } from "./billing.js";
 import { getToken, getSettings, saveSettings as dbSaveSettings, getSubscription,
          getPriceHistory, getActivityLog, getBatchForRollback, getLastBatch,
-         getPendingProducts, removePendingProduct, countPendingProducts } from "./db.js";
+         getPendingProducts, removePendingProduct, countPendingProducts,
+         exchangeSessionToken } from "./db.js";
 import { verifySessionToken, resolveShop } from "./verifyToken.js";
 import { shopifyGraphQL, numericId, toGid, API_VERSION, updateVariantPrice } from "./graphql.js";
 
@@ -20,6 +21,17 @@ apiRouter.use((req, res, next) => {
 });
 
 // Token functions moved to db.js
+
+// Ortak token alma: DB'de token varsa onu, yoksa session token ile
+// token exchange yaparak offline token üret. Böylece yeni mağaza
+// kurulumdan sonra ayrı OAuth adımı olmadan otomatik çalışır.
+async function getTokenOrExchange(req, shop) {
+  let token = await getToken(shop);
+  if (!token && req.shopifyRawToken) {
+    token = await exchangeSessionToken(shop, req.shopifyRawToken);
+  }
+  return token;
+}
 
 // Settings functions moved to db.js
 
@@ -112,7 +124,7 @@ apiRouter.get("/rate", async (req, res) => {
 apiRouter.get("/collections", async (req, res) => {
   const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
@@ -158,7 +170,7 @@ apiRouter.get("/products", async (req, res) => {
   const shop = resolveShop(req);
   const { collection_id } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
@@ -237,7 +249,7 @@ apiRouter.post("/product/update", async (req, res) => {
   const { variantId, usdPrice, baseCurrency, targetCurrency, margin } = req.body;
   if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = global.shopSettings[shop];
@@ -269,7 +281,7 @@ apiRouter.post("/sync", async (req, res) => {
   const { collection_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = await getSettings(shop);
@@ -330,7 +342,7 @@ apiRouter.post("/preview", async (req, res) => {
   const { collection_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = await getSettings(shop);
@@ -376,7 +388,7 @@ apiRouter.post("/rollback", async (req, res) => {
   const { batch_id } = req.body;
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   try {
@@ -411,7 +423,7 @@ apiRouter.post("/pending/resolve", async (req, res) => {
   const { variantId, usdPrice } = req.body;
   if (!shop || !variantId || !usdPrice) return res.status(400).json({ error: "Missing params" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = await getSettings(shop);
@@ -530,7 +542,7 @@ apiRouter.get("/dashboard", async (req, res) => {
   const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = await getTokenOrExchange(req, shop);
   if (!token) return res.status(401).json({ error: "Shop not authenticated" });
 
   const settings = global.shopSettings[shop] || {};

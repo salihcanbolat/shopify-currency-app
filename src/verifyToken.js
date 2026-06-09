@@ -49,6 +49,7 @@ export function verifySessionToken(req, res, next) {
     // Doğrulanmış mağazayı request'e ekle
     req.shop = shop;
     req.shopifyToken = payload;
+    req.shopifyRawToken = token; // token exchange için ham JWT
     next();
   } catch (err) {
     return res.status(401).json({ error: "Oturum doğrulanamadı: " + err.message });

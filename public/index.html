@@ -746,7 +746,17 @@
 
 <script>
 const urlParams = new URLSearchParams(window.location.search);
-const SHOP = urlParams.get('shop') || 'karinca-digital.myshopify.com';
+// Mağaza adı: önce App Bridge config, sonra URL parametresi.
+// Hardcoded fallback YOK — yanlış mağazaya istek atmamak için.
+function resolveShopDomain() {
+  try {
+    if (window.shopify && window.shopify.config && window.shopify.config.shop) {
+      return window.shopify.config.shop;
+    }
+  } catch(e) {}
+  return urlParams.get('shop') || '';
+}
+let SHOP = resolveShopDomain();
 
 // ── APP BRIDGE: Güvenli API çağrısı ──
 // Her API isteğine Shopify session token'ı (JWT) ekler.
@@ -1207,6 +1217,14 @@ let autoUpdateOn = true;
 let currencyPairs = [{ base: 'USD', target: 'TRY', margin: 0 }];
 
 async function init() {
+  // App Bridge sayfa parse'ından sonra hazır olabilir; SHOP'u tazele
+  if (!SHOP) {
+    for (let i = 0; i < 20 && !SHOP; i++) {
+      SHOP = resolveShopDomain();
+      if (SHOP) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
   try {
     const res = await apiFetch('/api/currencies');
     const currencies = await res.json();

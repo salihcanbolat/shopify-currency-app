@@ -1,6 +1,6 @@
 import express from "express";
 import { createSubscription, checkSubscription, isPremium, PLANS } from "./billing.js";
-import { getToken, saveSubscription, getSubscription } from "./db.js";
+import { getToken, saveSubscription, getSubscription, exchangeSessionToken } from "./db.js";
 import { verifySessionToken, resolveShop } from "./verifyToken.js";
 
 export const billingRouter = express.Router();
@@ -10,7 +10,7 @@ billingRouter.get("/status", verifySessionToken, async (req, res) => {
   const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = (await getToken(shop)) || (req.shopifyRawToken ? await exchangeSessionToken(shop, req.shopifyRawToken) : null);
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
@@ -32,7 +32,7 @@ billingRouter.post("/subscribe", verifySessionToken, async (req, res) => {
   const shop = resolveShop(req);
   if (!shop) return res.status(400).json({ error: "Missing shop" });
 
-  const token = await getToken(shop);
+  const token = (await getToken(shop)) || (req.shopifyRawToken ? await exchangeSessionToken(shop, req.shopifyRawToken) : null);
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
@@ -49,7 +49,7 @@ billingRouter.get("/confirm", async (req, res) => {
   const { shop, charge_id } = req.query;
   if (!shop) return res.redirect("/");
 
-  const token = await getToken(shop);
+  const token = (await getToken(shop)) || (req.shopifyRawToken ? await exchangeSessionToken(shop, req.shopifyRawToken) : null);
   if (token) {
     try {
       await checkSubscription(shop, token);

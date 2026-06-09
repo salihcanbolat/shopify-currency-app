@@ -59,7 +59,11 @@ shopifyAuth.get("/callback", async (req, res) => {
 
     const tokenData = await tokenResponse.json();
     const { access_token, refresh_token, expires_in } = tokenData;
-    if (!access_token) throw new Error("Token alınamadı");
+    if (!access_token) {
+      console.error(`❌ Token alınamadı (${shop}):`, JSON.stringify(tokenData).slice(0, 200));
+      throw new Error("Token alınamadı");
+    }
+    console.log(`🔑 Token alındı (${shop}): refresh_token=${refresh_token ? "VAR" : "YOK"}, expires_in=${expires_in || "yok"}`);
 
     // Token'ı (varsa refresh_token + son kullanma ile) DB'ye kaydet
     const expiresAt = expires_in ? Date.now() + expires_in * 1000 : null;
