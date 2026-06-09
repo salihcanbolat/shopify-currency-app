@@ -55,6 +55,33 @@
     .rate-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:20px}
     /* Karşılama sihirbazı */
     .wizard-overlay{position:fixed;inset:0;background:rgba(5,5,10,0.85);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+    .upgrade-modal{position:fixed;inset:0;background:rgba(5,5,10,0.88);backdrop-filter:blur(10px);z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+    .upgrade-box{background:var(--surface);border:1px solid var(--border-active);border-radius:20px;max-width:880px;width:100%;padding:32px;position:relative;margin:auto}
+    .upgrade-trial-badge{display:inline-block;background:linear-gradient(135deg,var(--accent3),#e0a800);color:#0a0a0f;font-weight:700;font-size:12px;padding:6px 14px;border-radius:100px;letter-spacing:0.5px;margin-bottom:14px;font-family:var(--sans)}
+    .upgrade-title{font-size:26px;font-weight:700;margin-bottom:6px}
+    .upgrade-sub{font-size:14px;color:var(--text2);margin-bottom:24px}
+    .upgrade-plans{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px}
+    .plan-card.free-card{opacity:0.9}
+    .plan-current-tag{display:inline-block;width:100%;text-align:center;background:var(--surface3);color:var(--text2);border:1px solid var(--border-active);font-size:11px;font-weight:600;padding:11px;border-radius:10px;margin-top:18px;font-family:var(--mono)}
+    .plan-card{border:1.5px solid var(--border);border-radius:16px;padding:22px;position:relative;cursor:pointer;transition:all 0.18s;background:var(--surface2)}
+    .plan-card:hover{border-color:var(--accent2);transform:translateY(-2px)}
+    .plan-card.featured{border-color:var(--accent3)}
+    .plan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--accent3);color:#0a0a0f;font-size:10px;font-weight:700;padding:4px 12px;border-radius:100px;letter-spacing:0.5px;white-space:nowrap}
+    .plan-name{font-size:14px;color:var(--text2);font-weight:600;margin-bottom:8px}
+    .plan-price{font-size:34px;font-weight:700;line-height:1}
+    .plan-period{font-size:14px;color:var(--text3);font-weight:400}
+    .plan-note{font-size:12px;color:var(--accent2);margin-top:8px;font-family:var(--mono);min-height:16px}
+    .plan-select-btn{width:100%;margin-top:18px;padding:12px;border-radius:10px;border:none;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s}
+    .plan-select-btn.monthly{background:var(--surface3);color:var(--text);border:1px solid var(--border-active)}
+    .plan-select-btn.monthly:hover{background:var(--border-active)}
+    .plan-select-btn.yearly{background:linear-gradient(135deg,var(--accent3),#e0a800);color:#0a0a0f}
+    .plan-select-btn:disabled{opacity:0.6;cursor:wait}
+    .upgrade-features{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-bottom:20px}
+    .upgrade-features li{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px}
+    .upgrade-features li::before{content:"✓";color:var(--accent2);font-weight:700}
+    .upgrade-trial-info{font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.6;border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px}
+    .upgrade-close{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:var(--sans);text-decoration:underline}
+    @media(max-width:680px){.upgrade-plans{grid-template-columns:1fr}.upgrade-features{grid-template-columns:1fr}}
     .wizard-modal{background:var(--surface);border:1px solid var(--border-active);border-radius:24px;max-width:520px;width:100%;padding:36px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.6)}
     .wizard-step{display:none}
     .wizard-step.active{display:block;animation:wizFade 0.3s ease}
@@ -304,6 +331,53 @@
           <button class="wizard-btn wizard-btn-primary" onclick="finishWizard()" data-i18n="wiz_finish">🚀 Kullanmaya Başla</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Premium Yükseltme Modalı -->
+  <div class="upgrade-modal" id="upgrade-modal">
+    <div class="upgrade-box">
+      <div class="upgrade-trial-badge" data-i18n="modal_trial_badge">✨ 7 GÜN ÜCRETSİZ DENEME</div>
+      <div class="upgrade-title" data-i18n="modal_title">Premium'a Yükselt</div>
+      <div class="upgrade-sub" data-i18n="modal_subtitle">7 gün ücretsiz deneyin, istediğiniz zaman iptal edin</div>
+
+      <div class="upgrade-plans">
+        <!-- Ücretsiz (mevcut plan) -->
+        <div class="plan-card free-card">
+          <div class="plan-name" data-i18n="plan_free_name">Ücretsiz</div>
+          <div><span class="plan-price">$0</span></div>
+          <div class="plan-note" data-i18n="plan_free_note">50 ürüne kadar, manuel güncelleme</div>
+          <div class="plan-current-tag" data-i18n="plan_free_current">Mevcut planınız</div>
+        </div>
+        <!-- Aylık -->
+        <div class="plan-card" onclick="selectPlan('monthly')">
+          <div class="plan-name" data-i18n="plan_monthly_name">Aylık</div>
+          <div><span class="plan-price">$9.99</span><span class="plan-period" data-i18n="plan_monthly_period">/ay</span></div>
+          <div class="plan-note" data-i18n="plan_monthly_note">Her ay yenilenir</div>
+          <button class="plan-select-btn monthly" id="btn-monthly" onclick="event.stopPropagation();subscribe('monthly')" data-i18n="modal_select_monthly">Aylık Planı Seç</button>
+        </div>
+        <!-- Yıllık -->
+        <div class="plan-card featured" onclick="selectPlan('yearly')">
+          <div class="plan-badge" data-i18n="plan_yearly_badge">EN AVANTAJLI</div>
+          <div class="plan-name" data-i18n="plan_yearly_name">Yıllık</div>
+          <div><span class="plan-price">$99.99</span><span class="plan-period" data-i18n="plan_yearly_period">/yıl</span></div>
+          <div class="plan-note" data-i18n="plan_yearly_note">12 ay kullan, 10 ay öde — 2 ay bedava</div>
+          <button class="plan-select-btn yearly" id="btn-yearly" onclick="event.stopPropagation();subscribe('yearly')" data-i18n="modal_select_yearly">Yıllık Planı Seç</button>
+        </div>
+      </div>
+
+      <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:12px" data-i18n="modal_features_title">Premium ile gelen özellikler</div>
+
+      <ul class="upgrade-features">
+        <li data-i18n="modal_feature_1">Sınırsız ürün</li>
+        <li data-i18n="modal_feature_2">Otomatik zamanlı güncelleme</li>
+        <li data-i18n="modal_feature_3">Çoklu hedef para birimi</li>
+        <li data-i18n="modal_feature_4">Koleksiyon bazlı fiyatlama</li>
+        <li data-i18n="modal_feature_5">Fiyat geçmişi ve geri alma</li>
+      </ul>
+
+      <div class="upgrade-trial-info" data-i18n="modal_trial_info">İlk 7 gün ücretsiz. Deneme bitiminde seçtiğiniz plan üzerinden ücretlendirilirsiniz. Ödeme Shopify üzerinden güvenle alınır.</div>
+      <button class="upgrade-close" onclick="closeUpgradeModal()" data-i18n="modal_close">Vazgeç</button>
     </div>
   </div>
 
@@ -852,6 +926,34 @@ const I18N = {
     js_showing_first: "ilk",
     js_showing: "gösteriliyor",
     js_rollback_confirm: "Son güncellemedeki tüm fiyatlar eski haline döndürülecek. Emin misiniz?",
+    logo_sub: "Döviz Dönüştürücü",
+    modal_title: "Premium'a Yükselt",
+    modal_subtitle: "7 gün ücretsiz deneyin, istediğiniz zaman iptal edin",
+    modal_trial_badge: "✨ 7 GÜN ÜCRETSİZ DENEME",
+    plan_monthly_name: "Aylık",
+    plan_monthly_price: "$9.99",
+    plan_monthly_period: "/ay",
+    plan_monthly_note: "Her ay yenilenir",
+    plan_yearly_name: "Yıllık",
+    plan_yearly_price: "$99.99",
+    plan_yearly_period: "/yıl",
+    plan_yearly_note: "12 ay kullan, 10 ay öde — 2 ay bedava",
+    plan_yearly_badge: "EN AVANTAJLI",
+    modal_feature_1: "Sınırsız ürün",
+    modal_feature_2: "Otomatik zamanlı güncelleme",
+    modal_feature_3: "Çoklu hedef para birimi",
+    modal_feature_4: "Koleksiyon bazlı fiyatlama",
+    modal_feature_5: "Fiyat geçmişi ve geri alma",
+    modal_select_monthly: "Aylık Planı Seç",
+    modal_select_yearly: "Yıllık Planı Seç",
+    modal_close: "Vazgeç",
+    plan_free_name: "Ücretsiz",
+    plan_free_price: "$0",
+    plan_free_period: "",
+    plan_free_note: "50 ürüne kadar, manuel güncelleme",
+    plan_free_current: "Mevcut planınız",
+    modal_features_title: "Premium ile gelen özellikler",
+    modal_trial_info: "İlk 7 gün ücretsiz. Deneme bitiminde seçtiğiniz plan üzerinden ücretlendirilirsiniz. Ödeme Shopify üzerinden güvenle alınır.",
     strip_rate_loading: "Kur yükleniyor…",
     strip_unit_product: "ürün",
     strip_last_default: "Son güncelleme: —",
@@ -1007,6 +1109,34 @@ const I18N = {
     js_showing_first: "first",
     js_showing: "shown",
     js_rollback_confirm: "All prices from the last update will be reverted. Are you sure?",
+    logo_sub: "Currency Converter",
+    modal_title: "Upgrade to Premium",
+    modal_subtitle: "Try free for 7 days, cancel anytime",
+    modal_trial_badge: "✨ 7-DAY FREE TRIAL",
+    plan_monthly_name: "Monthly",
+    plan_monthly_price: "$9.99",
+    plan_monthly_period: "/month",
+    plan_monthly_note: "Renews monthly",
+    plan_yearly_name: "Yearly",
+    plan_yearly_price: "$99.99",
+    plan_yearly_period: "/year",
+    plan_yearly_note: "Get 12 months, pay for 10 — 2 months free",
+    plan_yearly_badge: "BEST VALUE",
+    modal_feature_1: "Unlimited products",
+    modal_feature_2: "Automatic scheduled updates",
+    modal_feature_3: "Multiple target currencies",
+    modal_feature_4: "Collection-based pricing",
+    modal_feature_5: "Price history and rollback",
+    modal_select_monthly: "Choose Monthly",
+    modal_select_yearly: "Choose Yearly",
+    modal_close: "Cancel",
+    plan_free_name: "Free",
+    plan_free_price: "$0",
+    plan_free_period: "",
+    plan_free_note: "Up to 50 products, manual updates",
+    plan_free_current: "Your current plan",
+    modal_features_title: "What you get with Premium",
+    modal_trial_info: "First 7 days free. After the trial you'll be charged for the selected plan. Payment is handled securely through Shopify.",
     strip_rate_loading: "Loading rate…",
     strip_unit_product: "products",
     strip_last_default: "Last updated: —",
@@ -1941,29 +2071,51 @@ async function syncCollection() {
 
 // filterProducts → applyProductView ile değiştirildi
 
-async function upgradeToPremium() {
-  const btn = document.getElementById('upgrade-btn');
-  btn.textContent = '⏳ ' + t('js_redirecting');
-  btn.disabled = true;
+// Premium butonu → modalı aç (artık doğrudan abonelik başlatmıyor)
+function upgradeToPremium() {
+  const modal = document.getElementById('upgrade-modal');
+  if (modal) { modal.style.display = 'flex'; applyLang(); }
+}
+
+function closeUpgradeModal() {
+  const modal = document.getElementById('upgrade-modal');
+  if (modal) modal.style.display = 'none';
+}
+// Modalın boş alanına tıklayınca kapat
+document.addEventListener('click', function(e){
+  const modal = document.getElementById('upgrade-modal');
+  if (modal && e.target === modal) modal.style.display = 'none';
+});
+
+// Plan kartına tıklayınca ilgili butona görsel vurgu (opsiyonel basit davranış)
+function selectPlan(cycle) {
+  // Kart tıklaması doğrudan satın almıyor; kullanıcı butona basmalı.
+  // Burada istenirse vurgulama yapılabilir; sade tutuyoruz.
+}
+
+// Seçilen döngüyle (monthly/yearly) Shopify aboneliğini başlat
+async function subscribe(cycle) {
+  const btn = document.getElementById(cycle === 'yearly' ? 'btn-yearly' : 'btn-monthly');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ ' + t('js_redirecting'); }
 
   try {
     const res = await apiFetch('/billing/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shop: SHOP })
+      body: JSON.stringify({ shop: SHOP, cycle })
     });
     const data = await res.json();
 
     if (data.confirmationUrl) {
-      // Shopify ödeme sayfasına yönlendir
+      // Shopify ödeme/onay sayfasına yönlendir
       window.top.location.href = data.confirmationUrl;
     } else {
       throw new Error(data.error || 'Bağlantı kurulamadı');
     }
   } catch(e) {
     showToast('✗ ' + e.message, 'error');
-    btn.textContent = t('js_premium_cta');
-    btn.disabled = false;
+    if (btn) { btn.disabled = false; btn.textContent = original; }
   }
 }
 
