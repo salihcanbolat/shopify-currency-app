@@ -227,26 +227,26 @@
       <!-- Adım 1: Hoş geldin -->
       <div class="wizard-step active" data-step="0">
         <div class="wizard-icon">👋</div>
-        <div class="wizard-title">KurSync'e Hoş Geldiniz!</div>
-        <div class="wizard-desc">
-          Ürünlerinizi <b>dolar bazında</b> yönetin, müşterileriniz <b>güncel kurdan Türk Lirası</b> fiyatını görsün.
+        <div class="wizard-title" data-i18n="wiz_welcome_title">KurSync'e Hoş Geldiniz!</div>
+        <div class="wizard-desc" data-i18n-html="wiz_welcome_desc">
+          Ürünlerinizi <b>döviz bazında</b> yönetin, müşterileriniz <b>güncel kurdan yerel para birimi</b> fiyatını görsün.
           Kur her değiştiğinde tüm ürünlerinizi tek tek elle güncellemekle uğraşmayın — KurSync sizin için otomatik yapar.
           <br><br>
           Kurulum sadece <b>3 adım</b> sürer. Hadi başlayalım!
         </div>
         <div class="wizard-actions">
-          <button class="wizard-btn wizard-btn-skip" onclick="closeWizard()">Geç</button>
-          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()">Başlayalım →</button>
+          <button class="wizard-btn wizard-btn-skip" onclick="closeWizard()" data-i18n="wiz_skip">Geç</button>
+          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()" data-i18n="wiz_start">Başlayalım →</button>
         </div>
       </div>
 
       <!-- Adım 2: Para birimi -->
       <div class="wizard-step" data-step="1">
-        <div class="wizard-step-num">Adım 1 / 3</div>
-        <div class="wizard-title">Para Birimini Seçin</div>
-        <div class="wizard-desc">
-          <b>"Kurlar"</b> sekmesinden ürünlerinizi hangi para biriminde aldığınızı (örn. <b>USD - Dolar</b>) ve
-          müşterilerinize hangi para biriminde göstermek istediğinizi (örn. <b>TRY - Türk Lirası</b>) seçeceksiniz.
+        <div class="wizard-step-num" data-i18n="wiz_step1_num">Adım 1 / 3</div>
+        <div class="wizard-title" data-i18n="wiz_step1_title">Para Birimini Seçin</div>
+        <div class="wizard-desc" data-i18n-html="wiz_step1_desc">
+          <b>"Kurlar"</b> sekmesinden ürünlerinizi hangi para biriminde aldığınızı (örn. <b>USD</b>) ve
+          müşterilerinize hangi para biriminde göstermek istediğinizi (örn. <b>TRY</b>) seçeceksiniz.
         </div>
         <div class="wizard-example">
           <div class="wizard-flow">
@@ -255,53 +255,53 @@
             <div class="wizard-flow-box">🇹🇷 TRY</div>
           </div>
         </div>
-        <div class="wizard-desc" style="margin-bottom:20px">
+        <div class="wizard-desc" style="margin-bottom:20px" data-i18n-html="wiz_step1_margin">
           İsterseniz <b>kâr marjı</b> da ekleyebilirsiniz (örn. kurun üstüne %2). Böylece kur dalgalanmalarına karşı küçük bir tampon bırakırsınız.
         </div>
         <div class="wizard-actions">
-          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()">← Geri</button>
-          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()">Anladım →</button>
+          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()" data-i18n="wiz_back">← Geri</button>
+          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()" data-i18n="wiz_got_it">Anladım →</button>
         </div>
       </div>
 
       <!-- Adım 3: Ürün fiyatları -->
       <div class="wizard-step" data-step="2">
-        <div class="wizard-step-num">Adım 2 / 3</div>
-        <div class="wizard-title">Ürünlere Dolar Fiyatı Girin</div>
-        <div class="wizard-desc">
+        <div class="wizard-step-num" data-i18n="wiz_step2_num">Adım 2 / 3</div>
+        <div class="wizard-title" data-i18n="wiz_step2_title">Ürünlere Fiyat Girin</div>
+        <div class="wizard-desc" data-i18n-html="wiz_step2_desc">
           <b>"Ürünler"</b> sekmesinde tüm ürünleriniz otomatik listelenir. Her ürünün yanına
-          <b>dolar fiyatını</b> yazarsınız, KurSync anında Türk Lirası karşılığını gösterir.
+          <b>kaynak para birimi fiyatını</b> yazarsınız, KurSync anında karşılığını gösterir.
           <br><br>
           Tek tek girebilir ya da <b>"Tümünü Kaydet"</b> ile hepsini birden kaydedebilirsiniz.
         </div>
         <div class="wizard-example">
           <div class="wizard-flow">
-            <div class="wizard-flow-box">$100 girersiniz</div>
+            <div class="wizard-flow-box" data-i18n="wiz_step2_ex1">$100 girersiniz</div>
             <span style="color:var(--accent2)">→</span>
-            <div class="wizard-flow-box" style="color:var(--accent2)">₺4.600 görünür</div>
+            <div class="wizard-flow-box" style="color:var(--accent2)" data-i18n="wiz_step2_ex2">₺4.600 görünür</div>
           </div>
         </div>
         <div class="wizard-actions">
-          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()">← Geri</button>
-          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()">Anladım →</button>
+          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()" data-i18n="wiz_back">← Geri</button>
+          <button class="wizard-btn wizard-btn-primary" onclick="wizardNext()" data-i18n="wiz_got_it">Anladım →</button>
         </div>
       </div>
 
       <!-- Adım 4: Otomatik -->
       <div class="wizard-step" data-step="3">
-        <div class="wizard-step-num">Adım 3 / 3</div>
-        <div class="wizard-title">Gerisini KurSync Halleder</div>
-        <div class="wizard-desc">
-          Bir kez dolar fiyatlarını girdikten sonra, <b>kur her değiştiğinde</b> KurSync ürünlerinizin
-          Türk Lirası fiyatını otomatik günceller. İsterseniz her gün belirli bir saatte
+        <div class="wizard-step-num" data-i18n="wiz_step3_num">Adım 3 / 3</div>
+        <div class="wizard-title" data-i18n="wiz_step3_title">Gerisini KurSync Halleder</div>
+        <div class="wizard-desc" data-i18n-html="wiz_step3_desc">
+          Bir kez fiyatları girdikten sonra, <b>kur her değiştiğinde</b> KurSync ürünlerinizin
+          satış fiyatını otomatik günceller. İsterseniz her gün belirli bir saatte
           otomatik çalışacak şekilde ayarlayabilirsiniz.
           <br><br>
-          <b>Önemli:</b> Shopify mağaza para biriminizin <b>Türk Lirası (₺)</b> olarak ayarlı olduğundan emin olun.
+          <b>Önemli:</b> Shopify mağaza para biriminizin satış yapmak istediğiniz para birimi olarak ayarlı olduğundan emin olun.
           (Ayarlar → Genel → Mağaza para birimi)
         </div>
         <div class="wizard-actions">
-          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()">← Geri</button>
-          <button class="wizard-btn wizard-btn-primary" onclick="finishWizard()">🚀 Kullanmaya Başla</button>
+          <button class="wizard-btn wizard-btn-skip" onclick="wizardPrev()" data-i18n="wiz_back">← Geri</button>
+          <button class="wizard-btn wizard-btn-primary" onclick="finishWizard()" data-i18n="wiz_finish">🚀 Kullanmaya Başla</button>
         </div>
       </div>
     </div>
@@ -310,10 +310,10 @@
   <!-- Header -->
   <div class="header">
     <div class="logo-row">
-      <div class="logo-icon">₿</div>
+      <div class="logo-icon">⇄</div>
       <div>
-        <div class="logo-text">KurSync</div>
-        <div class="logo-sub">Shopify Currency Converter</div>
+        <div class="logo-text">KurSync <span id="header-premium" class="header-premium" style="display:none">✦ PREMIUM</span></div>
+        <div class="logo-sub" data-i18n="logo_sub">Currency Converter</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
@@ -327,14 +327,14 @@
 
   <!-- Üst Durum Şeridi -->
   <div class="status-strip" id="status-strip">
-    <div class="status-strip-item"><span class="status-strip-dot"></span><span id="strip-rate">Kur yükleniyor…</span></div>
+    <div class="status-strip-item"><span class="status-strip-dot"></span><span id="strip-rate" data-i18n="strip_rate_loading">Kur yükleniyor…</span></div>
     <div class="status-strip-sep"></div>
-    <div class="status-strip-item"><b id="strip-product-count">—</b> ürün</div>
+    <div class="status-strip-item"><b id="strip-product-count">—</b> <span data-i18n="strip_unit_product">ürün</span></div>
     <div class="status-strip-sep"></div>
-    <div class="status-strip-item"><span id="strip-last">Son güncelleme: —</span></div>
+    <div class="status-strip-item"><span id="strip-last" data-i18n="strip_last_default">Son güncelleme: —</span></div>
     <div class="status-strip-item status-strip-pending" id="strip-pending" style="display:none">
       <div class="status-strip-sep"></div>
-      <span>⏳ <b id="strip-pending-count">0</b> ürün bekliyor</span>
+      <span>⏳ <b id="strip-pending-count">0</b> <span data-i18n="st_pending">ürün bekliyor</span></span>
     </div>
   </div>
 
@@ -356,7 +356,7 @@
       <div class="dash-card green">
         <div class="dash-card-label" data-i18n="dash_last_update">Son Güncelleme</div>
         <div class="dash-card-value" style="font-size:18px" id="dash-last-updated">—</div>
-        <div class="dash-card-sub" id="dash-last-updated-sub">henüz güncellenmedi</div>
+        <div class="dash-card-sub" id="dash-last-updated-sub" data-i18n="dash_not_updated">henüz güncellenmedi</div>
       </div>
       <div class="dash-card amber">
         <div class="dash-card-label" data-i18n="dash_auto">Otomatik Güncelleme</div>
@@ -372,11 +372,11 @@
           <div style="font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Aktif Plan</div>
           <div style="display:flex;align-items:center;gap:10px">
             <span id="plan-badge" style="font-size:13px;font-weight:700;font-family:var(--mono);padding:4px 12px;border-radius:100px;background:var(--surface2);border:1px solid var(--border)">FREE</span>
-            <span id="plan-desc" style="font-size:12px;color:var(--text3);font-family:var(--mono)">50 ürüne kadar ücretsiz</span>
+            <span id="plan-desc" style="font-size:12px;color:var(--text3);font-family:var(--mono)" data-i18n="plan_free_desc">50 ürüne kadar ücretsiz</span>
           </div>
         </div>
         <button id="upgrade-btn" onclick="upgradeToPremium()" style="display:none;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent3),#e0a800);color:#0a0a0f;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s">
-          ⭐ Premium'a Geç — $4.99/ay
+          <span data-i18n="js_premium_cta">⭐ Premium'a Geç — $9.99/ay</span>
         </button>
         <div id="premium-badge" style="display:none;padding:8px 16px;border-radius:10px;background:rgba(242,196,74,0.15);border:1px solid rgba(242,196,74,0.3);font-size:12px;font-family:var(--mono);color:var(--accent3)">
           ⭐ Premium Aktif
@@ -387,11 +387,11 @@
     <!-- USD bekleyen ürünler uyarısı -->
     <div class="alert-card" id="pending-alert" style="display:none">
       <div>
-        <div class="alert-card-text">⏳ <span id="pending-count-text">0</span> ürün dolar fiyatı bekliyor</div>
-        <div class="alert-card-sub">Mağazaya yeni eklenen ürünlere dolar fiyatı girmeniz gerekiyor</div>
+        <div class="alert-card-text">⏳ <span id="pending-count-text">0</span> <span data-i18n="alert_pending">ürün fiyatı bekliyor</span></div>
+        <div class="alert-card-sub" data-i18n="alert_pending_sub">Mağazaya yeni eklenen ürünlere fiyat girmeniz gerekiyor</div>
       </div>
       <button class="btn btn-primary" style="flex:none;padding:9px 18px;font-size:12px" onclick="document.querySelector('.tab[data-tab=products]').click()">
-        Şimdi Fiyatla →
+        <span data-i18n="js_price_now_arrow">Şimdi Fiyatla →</span>
       </button>
     </div>
 
@@ -399,7 +399,7 @@
       <div class="panel-title" style="margin-bottom:0" data-i18n="current_rates">Güncel Kurlar</div>
       <div class="source-info" id="rate-source" title="Kurlar bu kaynaktan canlı alınır">
         <span class="source-dot"></span>
-        <span>Canlı kur · ExchangeRate-API</span>
+        <span data-i18n="live_rate">Canlı kur · ExchangeRate-API</span>
       </div>
     </div>
     <div class="rate-cards" id="rate-cards">
@@ -417,12 +417,12 @@
       <div class="dash-card">
         <div class="dash-card-label" data-i18n="total_updates">Toplam Güncelleme</div>
         <div class="dash-card-value" id="an-total-updates">—</div>
-        <div class="dash-card-sub">ürün fiyatı değiştirildi</div>
+        <div class="dash-card-sub" data-i18n="dash_price_changed">ürün fiyatı değiştirildi</div>
       </div>
       <div class="dash-card green">
         <div class="dash-card-label" data-i18n="sync_count">İşlem Sayısı</div>
         <div class="dash-card-value" id="an-total-syncs">—</div>
-        <div class="dash-card-sub">toplam güncelleme</div>
+        <div class="dash-card-sub" data-i18n="dash_total_update">toplam güncelleme</div>
       </div>
     </div>
 
@@ -445,7 +445,7 @@
         </button>
       </div>
       <div id="activity-list" style="display:flex;flex-direction:column;gap:8px">
-        <div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">Henüz işlem yok</div>
+        <div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px" data-i18n="ui_no_activity">Henüz işlem yok</div>
       </div>
     </div>
 
@@ -462,14 +462,14 @@
         <div class="subsection-label" data-i18n="price_history">Fiyat Değişim Geçmişi</div>
         <div style="overflow-x:auto;margin-bottom:20px">
           <table class="product-table">
-            <thead><tr><th>Ürün</th><th>Eski</th><th>Yeni</th><th>USD</th><th>Tarih</th></tr></thead>
+            <thead><tr><th data-i18n="th_product">Ürün</th><th data-i18n="th_old">Eski</th><th data-i18n="th_new">Yeni</th><th>USD</th><th data-i18n="th_date">Tarih</th></tr></thead>
             <tbody id="history-tbody"></tbody>
           </table>
         </div>
 
         <div class="subsection-label" data-i18n="live_log">Canlı Kayıt</div>
         <div class="log-box" id="log-box">
-          <div class="log-entry"><span class="log-time">—</span><span class="log-msg">Uygulama başlatıldı.</span></div>
+          <div class="log-entry"><span class="log-time">—</span><span class="log-msg" data-i18n="app_started_html">Uygulama başlatıldı.</span></div>
         </div>
       </div>
     </div>
@@ -523,10 +523,10 @@
           <option value="none">Yuvarlama yok (₺302,47)</option>
           <option value="up_99">,99 ile bitir (₺302,99)</option>
           <option value="up_95">,95 ile bitir (₺302,95)</option>
-          <option value="nearest_int">En yakın tam sayı (₺302)</option>
-          <option value="up_int">Yukarı tam sayı (₺303)</option>
-          <option value="nearest_5">En yakın 5'e (₺300)</option>
-          <option value="nearest_10">En yakın 10'a (₺300)</option>
+          <option value="nearest_int" data-i18n="round_nearest_int">En yakın tam sayı</option>
+          <option value="up_int" data-i18n="round_up_int">Yukarı tam sayı</option>
+          <option value="nearest_5" data-i18n="round_nearest_5">En yakın 5'e</option>
+          <option value="nearest_10" data-i18n="round_nearest_10">En yakın 10'a</option>
         </select>
 
         <div style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:22px">
@@ -534,17 +534,17 @@
             <div class="subsection-label" data-i18n="min_price">Minimum Fiyat Koruması</div>
             <div class="pair-margin" style="width:170px">
               <input type="number" id="min-price-input" value="0" min="0" step="1" placeholder="0" style="width:120px"/>
-              <span>₺ alt sınır</span>
+              <span>₺ <span data-i18n="min_price_label">alt sınır</span></span>
             </div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Fiyat bu değerin altına inmez</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px" data-i18n="min_price_hint">Fiyat bu değerin altına inmez</div>
           </div>
           <div>
             <div class="subsection-label" data-i18n="threshold">Kur Değişim Eşiği</div>
             <div class="pair-margin" style="width:170px">
               <input type="number" id="threshold-input" value="0" min="0" max="20" step="0.1" placeholder="0" style="width:120px"/>
-              <span>% eşik</span>
+              <span data-i18n="threshold_label">% eşik</span>
             </div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Bu orandan az değişimde güncelleme atlanır</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px" data-i18n="threshold_hint">Bu orandan az değişimde güncelleme atlanır</div>
           </div>
         </div>
 
@@ -553,7 +553,7 @@
           <div class="toggle" id="auto-new-toggle" onclick="toggleAutoNew()"><div class="toggle-knob"></div></div>
           <div>
             <span data-i18n="track_new">Yeni ürünleri takip et</span>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Mağazaya yeni ürün eklenince "dolar fiyatı bekleyenler" listesine alınır</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px" data-i18n="new_products_hint">Mağazaya yeni ürün eklenince "fiyat bekleyenler" listesine alınır</div>
           </div>
         </div>
       </div>
@@ -566,10 +566,10 @@
 
     <!-- Önizleme sonucu -->
     <div id="preview-panel" class="panel" style="display:none">
-      <div class="panel-title">Önizleme — <span id="preview-count" style="color:var(--accent2)"></span></div>
+      <div class="panel-title"><span data-i18n="preview_label">Önizleme</span> — <span id="preview-count" style="color:var(--accent2)"></span></div>
       <div style="overflow-x:auto">
         <table class="product-table">
-          <thead><tr><th>Ürün</th><th>Eski Fiyat</th><th>Yeni Fiyat</th></tr></thead>
+          <thead><tr><th data-i18n="th_product">Ürün</th><th data-i18n="th_old_price">Eski Fiyat</th><th data-i18n="th_new_price">Yeni Fiyat</th></tr></thead>
           <tbody id="preview-tbody"></tbody>
         </table>
       </div>
@@ -588,10 +588,10 @@
     <!-- USD bekleyen yeni ürünler -->
     <div class="panel" id="pending-panel" style="display:none;border-color:rgba(242,196,74,0.25)">
       <div class="panel-title" style="color:var(--accent3)" data-i18n="pending_title">⏳ Dolar Fiyatı Bekleyen Yeni Ürünler</div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px">Mağazanıza yeni eklenen bu ürünlere dolar fiyatı girin, otomatik olarak TL'ye çevrilsin</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px" data-i18n="pending_hint2">Yeni eklenen bu ürünlere fiyat girin, otomatik çevrilsin</div>
       <div style="overflow-x:auto">
         <table class="product-table">
-          <thead><tr><th style="width:46px"></th><th>Ürün</th><th>USD Fiyat</th><th>TRY Karşılığı</th><th style="width:140px"></th></tr></thead>
+          <thead><tr><th style="width:46px"></th><th data-i18n="th_product">Ürün</th><th data-i18n="th_source_price">Kaynak Fiyat</th><th data-i18n="th_converted">Karşılık</th><th style="width:140px"></th></tr></thead>
           <tbody id="pending-tbody"></tbody>
         </table>
       </div>
@@ -643,16 +643,16 @@
 
       <div id="products-loading" class="loading-wrap">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Ürünler yükleniyor...</div>
+        <div class="loading-text" data-i18n="ui_products_loading">Ürünler yükleniyor...</div>
       </div>
       <div id="products-table-wrap" style="display:none;overflow-x:auto">
         <table class="product-table">
           <thead>
             <tr>
               <th style="width:46px"></th>
-              <th>Ürün</th>
+              <th data-i18n="th_product">Ürün</th>
               <th>USD Fiyat</th>
-              <th>TRY Karşılığı</th>
+              <th data-i18n="th_converted">Karşılık</th>
               <th style="width:80px"></th>
             </tr>
           </thead>
@@ -677,13 +677,21 @@ const SHOP = urlParams.get('shop') || 'karinca-digital.myshopify.com';
 // ── APP BRIDGE: Güvenli API çağrısı ──
 // Her API isteğine Shopify session token'ı (JWT) ekler.
 // App Bridge yüklüyse token alınır; değilse (geliştirme) header'sız gider.
+// App Bridge'in hazır olmasını bekle (async yüklenir). Token alınana kadar kısa retry.
 async function getSessionToken() {
-  try {
-    if (window.shopify && window.shopify.idToken) {
-      return await window.shopify.idToken();
+  // En fazla ~3 sn boyunca App Bridge'i bekle
+  for (let i = 0; i < 30; i++) {
+    try {
+      if (window.shopify && typeof window.shopify.idToken === "function") {
+        const tok = await window.shopify.idToken();
+        if (tok) return tok;
+      }
+    } catch (e) {
+      console.warn("Session token denemesi başarısız:", e);
     }
-  } catch(e) {
-    console.warn('Session token alınamadı:', e);
+    // embedded değilsek (App Bridge hiç gelmeyecekse) beklemeye gerek yok
+    if (!window.shopify && i > 2) break;
+    await new Promise(r => setTimeout(r, 100));
   }
   return null;
 }
@@ -693,7 +701,23 @@ async function apiFetch(url, options = {}) {
   const token = await getSessionToken();
   const headers = { ...(options.headers || {}) };
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  return fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers });
+
+  // 401: oturum doğrulanamadı — App Bridge ile token'ı tazeleyip bir kez daha dene
+  if (res.status === 401 && !options._retried) {
+    try {
+      if (window.shopify && typeof window.shopify.idToken === "function") {
+        const fresh = await window.shopify.idToken();
+        if (fresh) {
+          const h2 = { ...(options.headers || {}), Authorization: 'Bearer ' + fresh };
+          return await fetch(url, { ...options, headers: h2, _retried: true });
+        }
+      }
+    } catch (e) {
+      console.warn("401 sonrası token tazeleme başarısız:", e);
+    }
+  }
+  return res;
 }
 
 // ── ÇOKLU DİL (i18n) ──
@@ -745,6 +769,113 @@ const I18N = {
     no_products_title: "Henüz ürün yok",
     no_products_desc: "Bu koleksiyonda ürün bulunamadı. Shopify mağazanıza ürün ekleyince burada görünecek.",
     price_now: "Fiyatla",
+    wiz_welcome_title: "KurSync'e Hoş Geldiniz!",
+    wiz_welcome_desc: "Ürünlerinizi <b>döviz bazında</b> yönetin, müşterileriniz <b>güncel kurdan yerel para birimi</b> fiyatını görsün. Kur her değiştiğinde tüm ürünlerinizi tek tek elle güncellemekle uğraşmayın — KurSync sizin için otomatik yapar.<br><br>Kurulum sadece <b>3 adım</b> sürer. Hadi başlayalım!",
+    wiz_skip: "Geç",
+    wiz_start: "Başlayalım →",
+    wiz_back: "← Geri",
+    wiz_got_it: "Anladım →",
+    wiz_finish: "🚀 Kullanmaya Başla",
+    wiz_step1_num: "Adım 1 / 3",
+    wiz_step1_title: "Para Birimini Seçin",
+    wiz_step1_desc: "<b>\"Kurlar\"</b> sekmesinden ürünlerinizi hangi para biriminde aldığınızı (örn. <b>USD</b>) ve müşterilerinize hangi para biriminde göstermek istediğinizi (örn. <b>TRY</b>) seçeceksiniz.",
+    wiz_step1_margin: "İsterseniz <b>kâr marjı</b> da ekleyebilirsiniz (örn. kurun üstüne %2). Böylece kur dalgalanmalarına karşı küçük bir tampon bırakırsınız.",
+    wiz_step2_num: "Adım 2 / 3",
+    wiz_step2_title: "Ürünlere Fiyat Girin",
+    wiz_step2_desc: "<b>\"Ürünler\"</b> sekmesinde tüm ürünleriniz otomatik listelenir. Her ürünün yanına <b>kaynak para birimi fiyatını</b> yazarsınız, KurSync anında karşılığını gösterir.<br><br>Tek tek girebilir ya da <b>\"Tümünü Kaydet\"</b> ile hepsini birden kaydedebilirsiniz.",
+    wiz_step2_ex1: "$100 girersiniz",
+    wiz_step2_ex2: "₺4.600 görünür",
+    wiz_step3_num: "Adım 3 / 3",
+    wiz_step3_title: "Gerisini KurSync Halleder",
+    wiz_step3_desc: "Bir kez fiyatları girdikten sonra, <b>kur her değiştiğinde</b> KurSync ürünlerinizin satış fiyatını otomatik günceller. İsterseniz her gün belirli bir saatte otomatik çalışacak şekilde ayarlayabilirsiniz.<br><br><b>Önemli:</b> Shopify mağaza para biriminizin satış yapmak istediğiniz para birimi olarak ayarlı olduğundan emin olun. (Ayarlar → Genel → Mağaza para birimi)",
+    js_conn_err: "Bağlantı hatası: ",
+    js_valid_price: "⚠️ Geçerli fiyat girin",
+    js_price_now: "Fiyatla",
+    js_last_none: "Henüz güncellenmedi",
+    js_unlim_feat: "Sınırsız ürün, tüm özellikler açık",
+    js_unlim_upd: "sınırsız güncelleme",
+    js_save_err: "✗ Kaydetme hatası",
+    js_update_err: "✗ Güncelleme hatası",
+    js_err: "✗ Hata",
+    js_products_failed: "✗ Ürünler yüklenemedi",
+    js_save: "Kaydet",
+    js_dash_err: "Dashboard yükleme hatası: ",
+    js_analytics_err: "Analitik yüklenemedi: ",
+    js_coll_err: "Koleksiyon yükleme hatası: ",
+    js_prod_err: "Ürün yükleme hatası: ",
+    js_sync_all_start: "Tüm ürün fiyatları güncelleniyor...",
+    js_auto_on: "Açık",
+    js_auto_off: "Kapalı",
+    js_manual: "Manuel",
+    js_app_started: "Uygulama başlatıldı.",
+    js_everyday: "Her gün",
+    js_n_updated: "ürün güncellendi",
+    js_n_saved: "ürün kaydedildi",
+    js_n_loaded: "ürün yüklendi",
+    js_priced_as: "olarak fiyatlandı",
+    js_saved_short: "kaydedildi",
+    js_save_all: "💾 Tümünü Kaydet",
+    js_update_now: "🔄 Tüm Fiyatları Şimdi Güncelle",
+    js_updating: "Güncelleniyor...",
+    js_no_activity: "Henüz işlem yok",
+    js_live_rate_just: "Canlı kur · ExchangeRate-API · az önce güncellendi",
+    js_last_update: "Son güncelleme: ",
+    js_free_limit: "ürüne kadar ücretsiz",
+    js_limit_label: "ürün limiti",
+    js_calculating: "Hesaplanıyor...",
+    js_redirecting: "Yönlendiriliyor...",
+    js_preview: "👁 Önizleme",
+    js_no_record: "Henüz kayıt yok",
+    js_save_btn: "💾 Kaydet",
+    js_sync_coll: "🔄 Bu Koleksiyonu Güncelle",
+    js_rolling_back: "Geri alınıyor...",
+    js_rollback_btn: "↩ Son Güncellemeyi Geri Al",
+    js_n_restored: "ürün geri alındı",
+    js_preview_err: "Önizleme hatası: ",
+    js_history_err: "Geçmiş yüklenemedi: ",
+    st_pending: "ürün bekliyor",
+    dash_not_updated: "henüz güncellenmedi",
+    plan_free_desc: "50 ürüne kadar ücretsiz",
+    alert_pending: "ürün fiyatı bekliyor",
+    alert_pending_sub: "Mağazaya yeni eklenen ürünlere fiyat girmeniz gerekiyor",
+    live_rate: "Canlı kur · ExchangeRate-API",
+    dash_price_changed: "ürün fiyatı değiştirildi",
+    dash_total_update: "toplam güncelleme",
+    no_activity_html: "Henüz işlem yok",
+    app_started_html: "Uygulama başlatıldı.",
+    js_premium_cta: "⭐ Premium'a Geç — $9.99/ay",
+    js_price_now_arrow: "Şimdi Fiyatla →",
+    js_everyday_short: "Her gün",
+    js_current: "güncel",
+    js_updating: "Güncelleniyor...",
+    js_affected: "ürün etkilenecek",
+    js_showing_first: "ilk",
+    js_showing: "gösteriliyor",
+    js_rollback_confirm: "Son güncellemedeki tüm fiyatlar eski haline döndürülecek. Emin misiniz?",
+    strip_rate_loading: "Kur yükleniyor…",
+    strip_unit_product: "ürün",
+    strip_last_default: "Son güncelleme: —",
+    ui_no_activity: "Henüz işlem yok",
+    th_product: "Ürün",
+    th_old: "Eski",
+    th_new: "Yeni",
+    th_date: "Tarih",
+    round_nearest_int: "En yakın tam sayı",
+    round_up_int: "Yukarı tam sayı",
+    round_nearest_5: "En yakın 5'e",
+    round_nearest_10: "En yakın 10'a",
+    min_price_label: "alt sınır",
+    min_price_hint: "Fiyat bu değerin altına inmez",
+    threshold_label: "% eşik",
+    threshold_hint: "Bu orandan az değişimde güncelleme atlanır",
+    new_products_hint: "Mağazaya yeni ürün eklenince \"fiyat bekleyenler\" listesine alınır",
+    preview_label: "Önizleme",
+    th_old_price: "Eski Fiyat",
+    th_new_price: "Yeni Fiyat",
+    pending_hint2: "Yeni eklenen bu ürünlere fiyat girin, otomatik çevrilsin",
+    th_source_price: "Kaynak Fiyat",
+    th_converted: "Karşılık",
+    ui_products_loading: "Ürünler yükleniyor...",
   },
   en: {
     connected: "Connected",
@@ -793,6 +924,113 @@ const I18N = {
     no_products_title: "No products yet",
     no_products_desc: "No products found in this collection. They'll appear here once you add products to your Shopify store.",
     price_now: "Set Price",
+    wiz_welcome_title: "Welcome to KurSync!",
+    wiz_welcome_desc: "Manage your products <b>in a foreign currency</b> and let customers see prices in your <b>local currency at live rates</b>. Stop updating every product by hand whenever rates change — KurSync does it automatically.<br><br>Setup takes just <b>3 steps</b>. Let's get started!",
+    wiz_skip: "Skip",
+    wiz_start: "Get started →",
+    wiz_back: "← Back",
+    wiz_got_it: "Got it →",
+    wiz_finish: "🚀 Start using",
+    wiz_step1_num: "Step 1 / 3",
+    wiz_step1_title: "Choose your currencies",
+    wiz_step1_desc: "In the <b>\"Rates\"</b> tab, choose which currency you buy your products in (e.g. <b>USD</b>) and which currency to show customers (e.g. <b>TRY</b>).",
+    wiz_step1_margin: "You can also add a <b>profit margin</b> (e.g. 2% on top of the rate) as a small buffer against rate fluctuations.",
+    wiz_step2_num: "Step 2 / 3",
+    wiz_step2_title: "Enter product prices",
+    wiz_step2_desc: "In the <b>\"Products\"</b> tab all your products are listed automatically. Enter each product's <b>source-currency price</b> and KurSync instantly shows the converted price.<br><br>Enter them one by one, or use <b>\"Save All\"</b> to save them all at once.",
+    wiz_step2_ex1: "You enter $100",
+    wiz_step2_ex2: "₺4,600 shown",
+    wiz_step3_num: "Step 3 / 3",
+    wiz_step3_title: "KurSync handles the rest",
+    wiz_step3_desc: "Once you've entered prices, KurSync automatically updates your products' selling prices <b>whenever the rate changes</b>. You can set it to run automatically at a specific time each day.<br><br><b>Important:</b> Make sure your Shopify store currency is set to the currency you want to sell in. (Settings → General → Store currency)",
+    js_conn_err: "Connection error: ",
+    js_valid_price: "⚠️ Enter a valid price",
+    js_price_now: "Set Price",
+    js_last_none: "Not updated yet",
+    js_unlim_feat: "Unlimited products, all features unlocked",
+    js_unlim_upd: "unlimited updates",
+    js_save_err: "✗ Save error",
+    js_update_err: "✗ Update error",
+    js_err: "✗ Error",
+    js_products_failed: "✗ Failed to load products",
+    js_save: "Save",
+    js_dash_err: "Dashboard load error: ",
+    js_analytics_err: "Failed to load analytics: ",
+    js_coll_err: "Collection load error: ",
+    js_prod_err: "Product load error: ",
+    js_sync_all_start: "Updating all product prices...",
+    js_auto_on: "On",
+    js_auto_off: "Off",
+    js_manual: "Manual",
+    js_app_started: "App started.",
+    js_everyday: "Every day at",
+    js_n_updated: "products updated",
+    js_n_saved: "products saved",
+    js_n_loaded: "products loaded",
+    js_priced_as: "set as price",
+    js_saved_short: "saved",
+    js_save_all: "💾 Save All",
+    js_update_now: "🔄 Update All Prices Now",
+    js_updating: "Updating...",
+    js_no_activity: "No activity yet",
+    js_live_rate_just: "Live rate · ExchangeRate-API · updated just now",
+    js_last_update: "Last update: ",
+    js_free_limit: "products free",
+    js_limit_label: "product limit",
+    js_calculating: "Calculating...",
+    js_redirecting: "Redirecting...",
+    js_preview: "👁 Preview",
+    js_no_record: "No records yet",
+    js_save_btn: "💾 Save",
+    js_sync_coll: "🔄 Update This Collection",
+    js_rolling_back: "Rolling back...",
+    js_rollback_btn: "↩ Undo Last Update",
+    js_n_restored: "products restored",
+    js_preview_err: "Preview error: ",
+    js_history_err: "Failed to load history: ",
+    st_pending: "products pending",
+    dash_not_updated: "not updated yet",
+    plan_free_desc: "Up to 50 products free",
+    alert_pending: "products awaiting a price",
+    alert_pending_sub: "Enter a price for newly added products",
+    live_rate: "Live rate · ExchangeRate-API",
+    dash_price_changed: "product prices changed",
+    dash_total_update: "total updates",
+    no_activity_html: "No activity yet",
+    app_started_html: "App started.",
+    js_premium_cta: "⭐ Upgrade to Premium — $9.99/mo",
+    js_price_now_arrow: "Price Now →",
+    js_everyday_short: "Every day",
+    js_current: "current",
+    js_updating: "Updating...",
+    js_affected: "products will be affected",
+    js_showing_first: "first",
+    js_showing: "shown",
+    js_rollback_confirm: "All prices from the last update will be reverted. Are you sure?",
+    strip_rate_loading: "Loading rate…",
+    strip_unit_product: "products",
+    strip_last_default: "Last updated: —",
+    ui_no_activity: "No activity yet",
+    th_product: "Product",
+    th_old: "Old",
+    th_new: "New",
+    th_date: "Date",
+    round_nearest_int: "Nearest integer",
+    round_up_int: "Round up",
+    round_nearest_5: "Nearest 5",
+    round_nearest_10: "Nearest 10",
+    min_price_label: "min limit",
+    min_price_hint: "Price won't go below this value",
+    threshold_label: "% threshold",
+    threshold_hint: "Updates skipped below this change rate",
+    new_products_hint: "New products are queued in the \"awaiting price\" list",
+    preview_label: "Preview",
+    th_old_price: "Old Price",
+    th_new_price: "New Price",
+    pending_hint2: "Enter prices for these new products; converted automatically",
+    th_source_price: "Source Price",
+    th_converted: "Converted",
+    ui_products_loading: "Loading products...",
   }
 };
 
@@ -809,11 +1047,17 @@ function setLang(lang) {
 }
 
 function applyLang() {
-  // data-i18n olan tüm elementleri çevir
+  // data-i18n olan tüm elementleri çevir (düz metin)
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     const val = t(key);
     if (val) el.textContent = val;
+  });
+  // data-i18n-html olanları çevir (içinde <b> gibi etiketler olanlar)
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    const val = t(key);
+    if (val) el.innerHTML = val;
   });
   // placeholder çevirileri
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
@@ -842,7 +1086,7 @@ async function init() {
     loadAnalytics();
     loadActivity();
   } catch(e) {
-    addLog('Bağlantı hatası: ' + e.message, 'err');
+    addLog(t('js_conn_err') + e.message, 'err');
   }
   setupTabs();
   applyLang();
@@ -994,7 +1238,7 @@ function updatePendingPreview(input) {
 async function resolvePending(variantId, btn) {
   const input = document.querySelector(`input[data-pending-variant="${variantId}"]`);
   const usdPrice = parseFloat(input?.value);
-  if (!usdPrice || usdPrice <= 0) { showToast('⚠️ Geçerli fiyat girin', 'error'); return; }
+  if (!usdPrice || usdPrice <= 0) { showToast(t('js_valid_price'), 'error'); return; }
 
   btn.disabled = true; btn.textContent = '...';
   try {
@@ -1004,12 +1248,12 @@ async function resolvePending(variantId, btn) {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`✓ ₺${parseFloat(data.tryPrice).toLocaleString('tr-TR')} olarak fiyatlandı`, 'success');
+      showToast(`✓ ${parseFloat(data.tryPrice).toLocaleString()} ${t('js_priced_as')}`, 'success');
       pendingProducts = pendingProducts.filter(p => p.variant_id !== variantId);
       renderPending();
       loadPending();
     } else throw new Error(data.error);
-  } catch(e) { btn.textContent = 'Fiyatla'; btn.disabled = false; showToast('✗ ' + e.message, 'error'); }
+  } catch(e) { btn.textContent = t('js_price_now'); btn.disabled = false; showToast('✗ ' + e.message, 'error'); }
 }
 
 async function dismissPending(variantId) {
@@ -1073,17 +1317,17 @@ async function loadDashboard() {
       const stripLast = document.getElementById('strip-last');
       if (stripLast) {
         const today = new Date().toDateString() === d.toDateString();
-        stripLast.textContent = 'Son güncelleme: ' + (today
+        stripLast.textContent = t('js_last_update') + (today
           ? 'bugün ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})
           : d.toLocaleDateString('tr-TR'));
       }
     } else {
       const stripLast = document.getElementById('strip-last');
-      if (stripLast) stripLast.textContent = 'Henüz güncellenmedi';
+      if (stripLast) stripLast.textContent = t('js_last_none');
     }
 
-    document.getElementById('dash-auto').textContent = data.autoUpdate ? 'Açık' : 'Kapalı';
-    document.getElementById('dash-schedule').textContent = data.autoUpdate ? `Her gün ${data.scheduleTime}` : 'Manuel';
+    document.getElementById('dash-auto').textContent = data.autoUpdate ? t('js_auto_on') : t('js_auto_off');
+    document.getElementById('dash-schedule').textContent = data.autoUpdate ? `${t('js_everyday')} ${data.scheduleTime}` : t('js_manual');
 
     // Plan bilgisi
     const planCard = document.getElementById('plan-card');
@@ -1100,16 +1344,16 @@ async function loadDashboard() {
         badge.style.background = 'rgba(242,196,74,0.15)';
         badge.style.borderColor = 'rgba(242,196,74,0.3)';
         badge.style.color = 'var(--accent3)';
-        desc.textContent = 'Sınırsız ürün, tüm özellikler açık';
+        desc.textContent = t('js_unlim_feat');
         upgradeBtn.style.display = 'none';
         premiumBadge.style.display = 'block';
-        if (limitSub) limitSub.textContent = 'sınırsız güncelleme';
+        if (limitSub) limitSub.textContent = t('js_unlim_upd');
       } else {
         badge.textContent = 'FREE';
-        desc.textContent = `${data.productLimit || 50} ürüne kadar ücretsiz`;
+        desc.textContent = `${data.productLimit || 50} ${t('js_free_limit')}`;
         upgradeBtn.style.display = 'block';
         premiumBadge.style.display = 'none';
-        if (limitSub) limitSub.textContent = `${data.productLimit || 50} ürün limiti`;
+        if (limitSub) limitSub.textContent = `${data.productLimit || 50} ${t('js_limit_label')}`;
       }
     }
 
@@ -1137,7 +1381,7 @@ async function loadDashboard() {
     // Kur kaynağı güncellik bilgisi
     const source = document.getElementById('rate-source');
     if (source) {
-      source.innerHTML = '<span class="source-dot"></span><span>Canlı kur · ExchangeRate-API · az önce güncellendi</span>';
+      source.innerHTML = '<span class="source-dot"></span><span>' + t('js_live_rate_just') + '</span>';
     }
 
     // Bekleyen ürün uyarısı
@@ -1147,7 +1391,7 @@ async function loadDashboard() {
       if (alert) alert.style.display = 'flex';
     }
   } catch(e) {
-    addLog('Dashboard yükleme hatası: ' + e.message, 'err');
+    addLog(t('js_dash_err') + e.message, 'err');
   }
 }
 
@@ -1202,7 +1446,7 @@ function renderScheduleTimes() {
     row.style.alignItems = 'center';
     row.style.gap = '10px';
     row.innerHTML = `
-      <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">Her gün</span>
+      <span style="font-size:12px;color:var(--text3);font-family:var(--mono)" data-i18n="js_everyday_short">Her gün</span>
       <input type="time" class="schedule-input" value="${time}" onchange="updateScheduleTime(${i}, this.value)"/>
       ${scheduleTimes.length > 1 ? `<button class="pair-remove" onclick="removeScheduleTime(${i})">✕</button>` : ''}
     `;
@@ -1316,7 +1560,7 @@ async function loadAnalytics() {
     drawLineChart('chart-rate', data.rateTrend || []);
     drawTopProducts(data.topProducts || []);
   } catch(e) {
-    addLog('Analitik yüklenemedi: ' + e.message, 'err');
+    addLog(t('js_analytics_err') + e.message, 'err');
   }
 }
 
@@ -1366,7 +1610,7 @@ function drawLineChart(elId, data) {
     </svg>
     <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text3);padding:0 20px">
       <span>min ${min.toFixed(2)}</span>
-      <span style="color:var(--accent2)">güncel ${lastRate.toFixed(2)}</span>
+      <span style="color:var(--accent2)">${t('js_current')} ${lastRate.toFixed(2)}</span>
       <span>max ${max.toFixed(2)}</span>
     </div>`;
 }
@@ -1410,9 +1654,9 @@ async function saveSettings() {
       })
     });
     addLog(`Ayarlar kaydedildi: ${baseCurrency} → ${targets.map(t=>t.code).join(', ')} (${targets.length} hedef)`, 'ok');
-  } catch(e) { showToast('✗ Kaydetme hatası', 'error'); btn.textContent = '💾 Kaydet'; return; }
+  } catch(e) { showToast(t('js_save_err'), 'error'); btn.textContent = '💾 ' + t('js_save'); return; }
 
-  btn.innerHTML = '<span class="btn-spinner"></span> Güncelleniyor...';
+  btn.innerHTML = '<span class="btn-spinner"></span> ' + t('js_updating');
   try {
     const res = await apiFetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1420,19 +1664,19 @@ async function saveSettings() {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`✓ ${data.updatedCount} ürün güncellendi`, 'success');
-      addLog(`✓ ${data.updatedCount} ürün güncellendi`, 'ok');
+      showToast(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'success');
+      addLog(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'ok');
       await loadDashboard();
     } else throw new Error(data.error);
-  } catch(e) { showToast('✗ Güncelleme hatası', 'error'); addLog('Hata: '+e.message,'err'); }
-  finally { btn.textContent = '💾 Kaydet'; }
+  } catch(e) { showToast(t('js_update_err'), 'error'); addLog(t('js_err')+': '+e.message,'err'); }
+  finally { btn.textContent = t('js_save_btn'); }
 }
 
 async function syncAll() {
   const btn = document.getElementById('sync-btn-text');
-  btn.innerHTML = '<span class="btn-spinner dark"></span> Güncelleniyor...';
+  btn.innerHTML = '<span class="btn-spinner dark"></span> ' + t('js_updating');
   document.querySelector('[onclick="syncAll()"]').disabled = true;
-  addLog('Tüm ürün fiyatları güncelleniyor...', '');
+  addLog(t('js_sync_all_start'), '');
   try {
     const res = await apiFetch('/api/sync', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1440,12 +1684,12 @@ async function syncAll() {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`✓ ${data.updatedCount} ürün güncellendi`, 'success');
-      addLog(`✓ ${data.updatedCount} ürün güncellendi`, 'ok');
+      showToast(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'success');
+      addLog(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'ok');
       await loadDashboard();
     } else throw new Error(data.error);
-  } catch(e) { showToast('✗ Hata', 'error'); addLog('Hata: '+e.message,'err'); }
-  finally { btn.textContent = '🔄 Tüm Fiyatları Şimdi Güncelle'; document.querySelector('[onclick="syncAll()"]').disabled = false; }
+  } catch(e) { showToast(t('js_err'), 'error'); addLog(t('js_err')+': '+e.message,'err'); }
+  finally { btn.textContent = t('js_update_now'); document.querySelector('[onclick="syncAll()"]').disabled = false; }
 }
 
 // ── COLLECTIONS ──
@@ -1470,7 +1714,7 @@ async function loadCollections() {
       };
       grid.appendChild(pill);
     });
-  } catch(e) { addLog('Koleksiyon yükleme hatası: ' + e.message, 'err'); }
+  } catch(e) { addLog(t('js_coll_err') + e.message, 'err'); }
 }
 
 // ── PRODUCTS ──
@@ -1490,10 +1734,10 @@ async function loadProducts() {
 
     allProducts = data.products || [];
     applyProductView();
-    addLog(`${data.total} ürün yüklendi`, 'ok');
+    addLog(`${data.total} ${t('js_n_loaded')}`, 'ok');
   } catch(e) {
-    addLog('Ürün yükleme hatası: ' + e.message, 'err');
-    showToast('✗ Ürünler yüklenemedi', 'error');
+    addLog(t('js_prod_err') + e.message, 'err');
+    showToast(t('js_products_failed'), 'error');
     document.getElementById('products-loading').style.display = 'none';
     document.getElementById('products-empty').style.display = 'block';
   }
@@ -1624,7 +1868,7 @@ function updatePreview(input) {
 async function saveVariantPrice(variantId, btn) {
   const input = document.querySelector(`input[data-variant-id="${variantId}"]`);
   const usdPrice = parseFloat(input?.value);
-  if (!usdPrice || usdPrice <= 0) { showToast('⚠️ Geçerli fiyat girin', 'error'); return; }
+  if (!usdPrice || usdPrice <= 0) { showToast(t('js_valid_price'), 'error'); return; }
 
   btn.disabled = true; btn.textContent = '...';
   try {
@@ -1635,10 +1879,10 @@ async function saveVariantPrice(variantId, btn) {
     const data = await res.json();
     if (data.success) {
       btn.textContent = '✓'; btn.classList.add('saved');
-      showToast(`✓ ₺${parseFloat(data.tryPrice).toLocaleString('tr-TR')} kaydedildi`, 'success');
+      showToast(`✓ ${parseFloat(data.tryPrice).toLocaleString()} ${t('js_saved_short')}`, 'success');
       setTimeout(() => { btn.textContent = 'Kaydet'; btn.classList.remove('saved'); btn.disabled = false; }, 2000);
     } else throw new Error(data.error);
-  } catch(e) { btn.textContent = 'Kaydet'; btn.disabled = false; showToast('✗ ' + e.message, 'error'); }
+  } catch(e) { btn.textContent = t('js_save'); btn.disabled = false; showToast('✗ ' + e.message, 'error'); }
 }
 
 async function saveAllPrices() {
@@ -1668,16 +1912,16 @@ async function saveAllPrices() {
     await new Promise(r => setTimeout(r, 50));
   }
 
-  btn.textContent = '💾 Tümünü Kaydet';
+  btn.textContent = t('js_save_all');
   document.querySelector('[onclick="saveAllPrices()"]').disabled = false;
-  showToast(`✓ ${saved} ürün kaydedildi`, 'success');
-  addLog(`✓ ${saved} ürün kaydedildi`, 'ok');
+  showToast(`✓ ${saved} ${t('js_n_saved')}`, 'success');
+  addLog(`✓ ${saved} ${t('js_n_saved')}`, 'ok');
   setTimeout(() => document.querySelectorAll('.save-btn.saved').forEach(b => { b.textContent='Kaydet'; b.classList.remove('saved'); }), 3000);
 }
 
 async function syncCollection() {
   const btn = document.getElementById('col-sync-text');
-  btn.innerHTML = '<span class="btn-spinner dark"></span> Güncelleniyor...';
+  btn.innerHTML = '<span class="btn-spinner dark"></span> ' + t('js_updating');
   document.querySelector('[onclick="syncCollection()"]').disabled = true;
 
   try {
@@ -1687,19 +1931,19 @@ async function syncCollection() {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`✓ ${data.updatedCount} ürün güncellendi`, 'success');
-      addLog(`✓ Koleksiyon güncellendi: ${data.updatedCount} ürün`, 'ok');
+      showToast(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'success');
+      addLog(`✓ ${data.updatedCount} ${t('js_n_updated')}`, 'ok');
       loadProducts();
     } else throw new Error(data.error);
-  } catch(e) { showToast('✗ Hata', 'error'); }
-  finally { btn.textContent = '🔄 Bu Koleksiyonu Güncelle'; document.querySelector('[onclick="syncCollection()"]').disabled = false; }
+  } catch(e) { showToast(t('js_err'), 'error'); }
+  finally { btn.textContent = t('js_sync_coll'); document.querySelector('[onclick="syncCollection()"]').disabled = false; }
 }
 
 // filterProducts → applyProductView ile değiştirildi
 
 async function upgradeToPremium() {
   const btn = document.getElementById('upgrade-btn');
-  btn.textContent = '⏳ Yönlendiriliyor...';
+  btn.textContent = '⏳ ' + t('js_redirecting');
   btn.disabled = true;
 
   try {
@@ -1718,7 +1962,7 @@ async function upgradeToPremium() {
     }
   } catch(e) {
     showToast('✗ ' + e.message, 'error');
-    btn.textContent = "⭐ Premium'a Geç — $4.99/ay";
+    btn.textContent = t('js_premium_cta');
     btn.disabled = false;
   }
 }
@@ -1726,7 +1970,7 @@ async function upgradeToPremium() {
 // ── ÖNİZLEME ──
 async function showPreview() {
   const btn = document.getElementById('preview-btn-text');
-  btn.innerHTML = '<span class="btn-spinner"></span> Hesaplanıyor...';
+  btn.innerHTML = '<span class="btn-spinner"></span> ' + t('js_calculating');
 
   // Önce ayarları kaydet ki önizleme güncel kurallarla çalışsın
   try {
@@ -1751,7 +1995,7 @@ async function showPreview() {
 
     document.getElementById('preview-panel').style.display = 'block';
     document.getElementById('preview-count').textContent =
-      `${data.totalVariants} ürün etkilenecek (ilk ${data.preview.length} gösteriliyor)`;
+      `${data.totalVariants} ${t('js_affected')} (${t('js_showing_first')} ${data.preview.length} ${t('js_showing')})`;
 
     const tbody = document.getElementById('preview-tbody');
     tbody.innerHTML = '';
@@ -1768,9 +2012,9 @@ async function showPreview() {
     });
     document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
   } catch(e) {
-    showToast('✗ Önizleme hatası: ' + e.message, 'error');
+    showToast(t('js_preview_err') + e.message, 'error');
   } finally {
-    btn.textContent = '👁 Önizleme';
+    btn.textContent = t('js_preview');
   }
 }
 
@@ -1782,7 +2026,7 @@ async function loadHistory() {
     const tbody = document.getElementById('history-tbody');
     tbody.innerHTML = '';
     if (!data.history || data.history.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);font-family:var(--mono);font-size:12px">Henüz kayıt yok</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);font-family:var(--mono);font-size:12px">' + t('js_no_record') + '</td></tr>';
       return;
     }
     data.history.forEach(h => {
@@ -1799,7 +2043,7 @@ async function loadHistory() {
       tbody.appendChild(tr);
     });
   } catch(e) {
-    addLog('Geçmiş yüklenemedi: ' + e.message, 'err');
+    addLog(t('js_history_err') + e.message, 'err');
   }
 }
 
@@ -1810,7 +2054,7 @@ async function loadActivity() {
     const list = document.getElementById('activity-list');
     list.innerHTML = '';
     if (!data.activity || data.activity.length === 0) {
-      list.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">Henüz işlem yok</div>';
+      list.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:8px">' + t('js_no_activity') + '</div>';
       return;
     }
     data.activity.forEach(a => {
@@ -1831,10 +2075,10 @@ async function loadActivity() {
 
 // ── GERİ ALMA ──
 async function rollbackLast() {
-  if (!confirm('Son güncellemedeki tüm fiyatlar eski haline döndürülecek. Emin misiniz?')) return;
+  if (!confirm(t('js_rollback_confirm'))) return;
 
   const btn = document.getElementById('rollback-btn-text');
-  btn.innerHTML = '<span class="btn-spinner"></span> Geri alınıyor...';
+  btn.innerHTML = '<span class="btn-spinner"></span> ' + t('js_rolling_back');
   document.querySelector('[onclick="rollbackLast()"]').disabled = true;
 
   try {
@@ -1844,14 +2088,14 @@ async function rollbackLast() {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`✓ ${data.restored} ürün geri alındı`, 'success');
+      showToast(`✓ ${data.restored} ${t('js_n_restored')}`, 'success');
       loadHistory();
       loadActivity();
     } else throw new Error(data.error);
   } catch(e) {
     showToast('✗ ' + e.message, 'error');
   } finally {
-    btn.textContent = '↩ Son Güncellemeyi Geri Al';
+    btn.textContent = t('js_rollback_btn');
     document.querySelector('[onclick="rollbackLast()"]').disabled = false;
   }
 }

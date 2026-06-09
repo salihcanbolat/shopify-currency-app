@@ -132,24 +132,47 @@ const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
 // Refresh token ile yeni access token al (Shopify token rotasyonu)
 async function refreshAccessToken(shop, refreshToken) {
   console.log(`🔄 Token yenileniyor: ${shop}`);
-  const resp = await fetch(`https://${shop}/admin/oauth/access_token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: SHOPIFY_API_KEY,
-      client_secret: SHOPIFY_API_SECRET,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
+
+  // Shopify refresh: application/x-www-form-urlencoded (JSON DEĞİL!)
+  const body = new URLSearchParams({
+    client_id: SHOPIFY_API_KEY,
+    client_secret: SHOPIFY_API_SECRET,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
   });
-  const data = await resp.json();
-  if (!resp.ok || !data.access_token) {
-    throw new Error(`Token yenileme başarısız: ${JSON.stringify(data)}`);
+
+  async function doRequest() {
+    const resp = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+      },
+      body: body.toString(),
+    });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error(`Beklenmeyen yanıt (JSON değil): ${text.slice(0, 120)}`); }
+    return { resp, data };
   }
-  // Shopify yeni access_token + (genelde) yeni refresh_token döner
+
+  let resp, data;
+  try {
+    ({ resp, data } = await doRequest());
+  } catch (e) {
+    // Tek seferlik retry (Shopify kısa retry penceresi içinde aynı yanıtı dönebilir)
+    ({ resp, data } = await doRequest());
+  }
+
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`Token yenileme başarısız (${resp.status}): ${JSON.stringify(data)}`);
+  }
+
   const newExpiresAt = data.expires_in ? Date.now() + data.expires_in * 1000 : null;
-  const newRefresh = data.refresh_token || refreshToken; // dönmezse mevcudu koru
+  const newRefresh = data.refresh_token || refreshToken;
   await saveToken(shop, data.access_token, newRefresh, newExpiresAt);
+  console.log(`✅ Token yenilendi: ${shop} (yeni geçerlilik: ${newExpiresAt ? new Date(newExpiresAt).toISOString() : "yok"})`);
   return data.access_token;
 }
 
@@ -167,6 +190,25 @@ async function loadTokenRow(shop) {
     refreshToken: row.refresh_token || null,
     expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : null,
   };
+}
+
+// 401 sonrası zorla yenileme: expiry'ye bakmaz, refresh token varsa hemen yeniler
+export async function forceRefreshToken(shop) {
+  if (!global.shopTokens) global.shopTokens = {};
+  let entry = global.shopTokens[shop];
+  if (!entry || typeof entry === "string") {
+    try { entry = await loadTokenRow(shop); } catch { entry = null; }
+  }
+  if (!entry || !entry.refreshToken) {
+    console.warn(`forceRefreshToken: ${shop} için refresh token yok`);
+    return null;
+  }
+  try {
+    return await refreshAccessToken(shop, entry.refreshToken);
+  } catch (e) {
+    console.error(`forceRefreshToken hatası (${shop}):`, e.message);
+    return null;
+  }
 }
 
 export async function getToken(shop) {
@@ -196,9 +238,11 @@ export async function getToken(shop) {
     try {
       return await refreshAccessToken(shop, entry.refreshToken);
     } catch (e) {
-      console.error(`Token yenileme hatası (${shop}):`, e.message);
-      // Yenileme başarısızsa eldeki token'ı dön (belki hâlâ çalışır), yoksa null
-      return entry.token || null;
+      console.error(`Proaktif token yenileme hatası (${shop}):`, e.message);
+      // Token zaten dolmuşsa eski token'ı dönmek 401 verir; null dön ki
+      // çağıran taraf yeniden OAuth'a yönlendirsin. Henüz dolmadıysa eldekini dene.
+      const stillValid = entry.expiresAt && Date.now() < entry.expiresAt;
+      return stillValid ? entry.token : null;
     }
   }
 

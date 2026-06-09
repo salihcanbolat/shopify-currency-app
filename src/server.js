@@ -21,10 +21,10 @@ const PORT = process.env.PORT || 8080;
 // Bu, global express.json()'dan ÖNCE gelmeli; aksi halde body parse edilir ve HMAC bozulur.
 app.use(
   "/webhooks",
-  express.raw({ type: "application/json" }),
+  express.raw({ type: "*/*" }),
   (req, res, next) => {
     // express.raw() body'yi Buffer olarak req.body'ye koyar; rawBody olarak sakla
-    req.rawBody = req.body;
+    req.rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
     next();
   },
   gdprRouter
@@ -50,7 +50,11 @@ const INDEX_PATH = path.join(__dirname, "../public/index.html");
 function serveIndex(req, res) {
   try {
     let html = fs.readFileSync(INDEX_PATH, "utf8");
-    html = html.replace(/__SHOPIFY_API_KEY__/g, process.env.SHOPIFY_API_KEY || "");
+    const apiKey = process.env.SHOPIFY_API_KEY || "";
+    if (!apiKey) {
+      console.error("⚠️ KRİTİK: SHOPIFY_API_KEY ortam değişkeni boş! App Bridge başlatılamaz, tüm istekler 401 olur.");
+    }
+    html = html.replace(/__SHOPIFY_API_KEY__/g, apiKey);
     res.set("Content-Type", "text/html");
     res.send(html);
   } catch (e) {

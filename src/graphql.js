@@ -11,7 +11,7 @@ export const API_VERSION = "2026-04";
  * @param {object} variables - GraphQL değişkenleri
  * @returns {Promise<object>} data.data (userErrors kontrolü çağırana bırakılır)
  */
-export async function shopifyGraphQL(shop, token, query, variables = {}) {
+export async function shopifyGraphQL(shop, token, query, variables = {}, _retried = false) {
   const response = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
@@ -21,9 +21,25 @@ export async function shopifyGraphQL(shop, token, query, variables = {}) {
     body: JSON.stringify({ query, variables }),
   });
 
-  const json = await response.json();
+  // 401/403: token geçersiz/expired → bir kez yenileyip tekrar dene
+  if ((response.status === 401 || response.status === 403) && !_retried) {
+    console.warn(`⚠️ ${response.status} alındı (${shop}) — token yenilenip tekrar denenecek`);
+    try {
+      const { forceRefreshToken } = await import("./db.js");
+      const fresh = await forceRefreshToken(shop);
+      if (fresh) {
+        return await shopifyGraphQL(shop, fresh, query, variables, true);
+      }
+    } catch (e) {
+      console.error("401 sonrası token yenileme hatası:", e.message);
+    }
+  }
 
-  // Üst seviye GraphQL hataları (sözdizimi, yetki, throttle vb.)
+  const text = await response.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error(`[API] Beklenmeyen yanıt (${response.status}): ${text.slice(0, 120)}`); }
+
   if (json.errors) {
     throw new Error("[GraphQL] " + JSON.stringify(json.errors));
   }

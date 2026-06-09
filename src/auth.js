@@ -45,13 +45,16 @@ shopifyAuth.get("/callback", async (req, res) => {
   try {
     const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+      },
+      body: new URLSearchParams({
         client_id: SHOPIFY_API_KEY,
         client_secret: SHOPIFY_API_SECRET,
         code,
-        expiring: 1,
-      }),
+        expiring: "1",
+      }).toString(),
     });
 
     const tokenData = await tokenResponse.json();
