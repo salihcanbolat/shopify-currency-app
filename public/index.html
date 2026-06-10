@@ -989,6 +989,18 @@ const I18N = {
     th_source_price: "Kaynak Fiyat",
     th_converted: "Karşılık",
     ui_products_loading: "Ürünler yükleniyor...",
+    cur_USD: "ABD Doları",
+    cur_EUR: "Euro",
+    cur_GBP: "İngiliz Sterlini",
+    cur_TRY: "Türk Lirası",
+    cur_JPY: "Japon Yeni",
+    cur_CHF: "İsviçre Frangı",
+    cur_CAD: "Kanada Doları",
+    cur_AUD: "Avustralya Doları",
+    cur_SAR: "Suudi Riyali",
+    cur_AED: "BAE Dirhemi",
+    cur_RUB: "Rus Rublesi",
+    cur_CNY: "Çin Yuanı",
   },
   en: {
     connected: "Connected",
@@ -1172,6 +1184,18 @@ const I18N = {
     th_source_price: "Source Price",
     th_converted: "Converted",
     ui_products_loading: "Loading products...",
+    cur_USD: "US Dollar",
+    cur_EUR: "Euro",
+    cur_GBP: "British Pound",
+    cur_TRY: "Turkish Lira",
+    cur_JPY: "Japanese Yen",
+    cur_CHF: "Swiss Franc",
+    cur_CAD: "Canadian Dollar",
+    cur_AUD: "Australian Dollar",
+    cur_SAR: "Saudi Riyal",
+    cur_AED: "UAE Dirham",
+    cur_RUB: "Russian Ruble",
+    cur_CNY: "Chinese Yuan",
   }
 ,
   de: {
@@ -1381,6 +1405,18 @@ const I18N = {
     th_source_price: "Ausgangspreis",
     th_converted: "Umgerechnet",
     ui_products_loading: "Produkte werden geladen...",
+    cur_USD: "US-Dollar",
+    cur_EUR: "Euro",
+    cur_GBP: "Britisches Pfund",
+    cur_TRY: "Türkische Lira",
+    cur_JPY: "Japanischer Yen",
+    cur_CHF: "Schweizer Franken",
+    cur_CAD: "Kanadischer Dollar",
+    cur_AUD: "Australischer Dollar",
+    cur_SAR: "Saudi-Riyal",
+    cur_AED: "VAE-Dirham",
+    cur_RUB: "Russischer Rubel",
+    cur_CNY: "Chinesischer Yuan",
   }
 };
 
@@ -1394,6 +1430,13 @@ function setLang(lang) {
   currentLang = lang;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
   applyLang();
+  // Para birimi açılır listeleri JS ile üretiliyor; dil değişince yeniden çiz
+  try {
+    if (typeof CURRENCIES !== 'undefined' && CURRENCIES.length) {
+      if (typeof renderBaseSelect === 'function') renderBaseSelect();
+      if (typeof renderTargets === 'function') renderTargets();
+    }
+  } catch(e) {}
 }
 
 function applyLang() {
@@ -1830,7 +1873,7 @@ function renderBaseSelect() {
   const sel = document.getElementById('base-currency-select');
   if (!sel) return;
   sel.innerHTML = CURRENCIES.map(c =>
-    `<option value="${c.code}" ${c.code === baseCurrency ? 'selected' : ''}>${c.flag} ${c.code} — ${c.name}</option>`
+    `<option value="${c.code}" ${c.code === baseCurrency ? 'selected' : ''}>${c.flag} ${c.code} — ${t("cur_" + c.code)}</option>`
   ).join('');
 }
 
@@ -1852,7 +1895,7 @@ function renderTargets() {
       <div style="font-size:13px;color:var(--text3);font-family:var(--mono);padding:0 4px">${baseCurrency} →</div>
       <select class="pair-select" onchange="updateTarget(${i},'code',this.value)">
         ${CURRENCIES.filter(c => c.code !== baseCurrency).map(c =>
-          `<option value="${c.code}" ${c.code === target.code ? 'selected' : ''}>${c.flag} ${c.code} — ${c.name}</option>`
+          `<option value="${c.code}" ${c.code === target.code ? 'selected' : ''}>${c.flag} ${c.code} — ${t("cur_" + c.code)}</option>`
         ).join('')}
       </select>
       <div class="pair-margin">
