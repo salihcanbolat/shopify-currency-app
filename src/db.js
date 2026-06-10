@@ -101,6 +101,16 @@ export async function initDb() {
     `);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_pending_shop ON pending_products(shop)`);
 
+    // Kur önbelleği — kalıcı (deploy'da sıfırlanmaz, tüm API'ler çökse son değer kalır)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS rate_cache (
+        pair VARCHAR(16) PRIMARY KEY,
+        rate NUMERIC(20,8) NOT NULL,
+        source VARCHAR(32),
+        fetched_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     console.log("\u2705 Veritaban\u0131 tablolar\u0131 haz\u0131r");
   } catch(e) {
     console.error("❌ Veritabanı init hatası:", e.message);
@@ -524,4 +534,33 @@ export async function deleteShopData(shop) {
     }
   }
   console.log(`🗑️ Mağaza verileri silindi (GDPR): ${shop}`);
+}
+
+// ── KALICI KUR ÖNBELLEĞİ (rate_cache) ──
+// Tüm dış API'ler çökse bile son bilinen kuru döndürebilmek için DB'de saklanır.
+export async function saveRateToDb(pair, rate, source) {
+  try {
+    const db = getDb();
+    await db.query(`
+      INSERT INTO rate_cache (pair, rate, source, fetched_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (pair) DO UPDATE
+        SET rate = $2, source = $3, fetched_at = NOW()
+    `, [pair, rate, source || null]);
+  } catch (e) {
+    console.error("saveRateToDb hatası:", e.message);
+  }
+}
+
+// pair için { rate, fetchedAt } döner; yoksa null
+export async function getRateFromDb(pair) {
+  try {
+    const db = getDb();
+    const r = await db.query(`SELECT rate, fetched_at FROM rate_cache WHERE pair = $1`, [pair]);
+    if (r.rows.length === 0) return null;
+    return { rate: Number(r.rows[0].rate), fetchedAt: new Date(r.rows[0].fetched_at).getTime() };
+  } catch (e) {
+    console.error("getRateFromDb hatası:", e.message);
+    return null;
+  }
 }
